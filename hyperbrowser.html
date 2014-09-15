@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hyperbolic Browser</title>
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
+    <script type="text/javascript" src="js/stats.js"></script>
+    <script type="text/javascript" src="js/dat.gui.js"></script>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div id="stats">
+</div>
+<div id="output">
+</div>
+<!--Javascript code-->
+<script type="text/javascript">
+	$(function () {
+		var stats = initStats();
+
+		//Function 
+		function initStats() {
+            var stats = new Stats();
+            stats.setMode(0); // 0: fps, 1: ms
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+            $("#output").append( stats.domElement );
+            return stats;
+        }
+	});
+</script>
+</body>
+</html>
