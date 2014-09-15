@@ -6,6 +6,13 @@
     <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
     <script type="text/javascript" src="js/dat.gui.js"></script>
+    <script type="text/javascript" src="js/Graph.js"></script>
+
+    <script type="text/javascript" src="js/Label.js"></script>
+    <script type="text/javascript" src="js/math.js"></script>
+    <script type="text/javascript" src="js/ObjectSelection.js"></script>
+
+    <script type="text/javascript" src="layout.js"></script>
     <style>
         body{
             margin: 0;
@@ -21,9 +28,64 @@
 <!--Javascript code-->
 <script type="text/javascript">
 	$(function () {
+        //initialise the stats, to check performance
 		var stats = initStats();
 
-		//Function 
+        var scene = new THREE.Scene();
+
+        //Create the camera and point to the center
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+        //Modifying camera coordinates x and z we can appreciate the 3D
+        camera.position.z = 10000;
+        camera.lookAt(scene.position);
+
+        //add a sphere in the center, this would be the parent
+        var sphereGeometry = new THREE.SphereGeometry(50,10,10);
+        var sphereMaterial = new THREE.MeshBasicMaterial({color: 0x0000ff});
+        var sphere0 = new THREE.Mesh(sphereGeometry,sphereMaterial);
+        sphere0.position.x=0;
+        sphere0.position.y=0;
+        sphere0.position.z=0;
+        scene.add(sphere0);
+
+        //add a circle to see the representation area
+        var radius = 4000,
+        materialC = new THREE.LineBasicMaterial({color: 0x000000}),
+        geometryC = new THREE.CircleGeometry(radius,64);
+        geometryC.vertices.shift(); // Remove center vertex
+        scene.add(new THREE.Line(geometryC,materialC));
+
+        //axisHelper for developing purposes
+        var axisHelper = new THREE.AxisHelper( 400 );
+        scene.add( axisHelper );
+
+        // create a render and set the size
+        var renderer = new THREE.WebGLRenderer({alpha: true});
+        renderer.setClearColor(0xEEEEEE, 1.0);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      
+        $("#output").append(renderer.domElement);
+
+        //var controls, for the modifiable variables
+        var controls = new function() {
+            this.distance = 500;
+        }
+
+        //create the GUI for the variable controls
+        var gui = new dat.GUI();
+        gui.add(controls,'distance',0,1000);
+
+        render();
+
+        //function render that establishes what's done in every iteration
+        function render() {
+            stats.update();
+            // render using requestAnimationFrame
+            requestAnimationFrame(render);
+            renderer.render(scene,camera);
+        }
+
+        //function to initialise the stats for performance purposes
 		function initStats() {
             var stats = new Stats();
             stats.setMode(0); // 0: fps, 1: ms
@@ -31,7 +93,7 @@
             stats.domElement.style.position = 'absolute';
             stats.domElement.style.left = '0px';
             stats.domElement.style.top = '0px';
-            $("#output").append( stats.domElement );
+            $("#stats").append( stats.domElement );
             return stats;
         }
 	});
