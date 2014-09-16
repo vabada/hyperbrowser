@@ -79,7 +79,7 @@
             nodes.push(node);
 
             var steps = 1;
-            while(nodes.length != 0 && steps < 20) {
+            while(nodes.length != 0 && steps < 200) {
               var node = nodes.shift();
 
               //from 1 to 20
@@ -100,7 +100,7 @@
         function drawGraph(graph){
 
             //draw the initial node, always in the middle (we'll look at it)
-            var nodeGeo = new THREE.SphereGeometry(50,10,10);
+            var nodeGeo = new THREE.SphereGeometry(75,10,10);
             var nodeMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
             var sphere0 = new THREE.Mesh(nodeGeo,nodeMat);
             sphere0.position.x=0;
@@ -108,23 +108,23 @@
             scene.add(sphere0);
 
             //distance to the center for first level of nodes (should be automatic)
-            var rad = 2500;
+            var rad = 1500;
 
             //angle of subdivisions. Equal in first stage
             //TBI: automatic in function of number of children and grandchildren
             var angle = subangle(2*math.pi,graph.nodes[0].nodesTo.length)
             //number 1 in complex, to be used for the desplazamiento
-            var a = math.complex({re:1,im:0})
+            var _1i0 = math.complex({re:1,im:0})
             //number to multiply by a to get the desired transformation within the circumference
             var trans = math.complex({r:1,phi:angle})
 
             //for all the nodes children of the first node
             for(var i=0; i < graph.nodes[0].nodesTo.length; i++) {
                 //calculate desplazamiento
-                a = math.multiply(a,trans);
+                _1i0 = math.multiply(_1i0,trans);
                 //establish the position where it'll be drawn
-                graph.nodes[0].nodesTo[i].position.x = rad*a.re;
-                graph.nodes[0].nodesTo[i].position.y = rad*a.im;
+                graph.nodes[0].nodesTo[i].position.x = rad*_1i0.re;
+                graph.nodes[0].nodesTo[i].position.y = rad*_1i0.im;
                 //console.log(graph.nodes[0].nodesTo[i]);
                 //draw the sphere representing this node
                 var nodeMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
@@ -138,14 +138,51 @@
 
                 //if the son has children, call recursively to do same process
                 if (graph.nodes[0].nodesTo[i].nodesTo.length != 0){
-                    drawSubWedge(graph.nodes[0].nodesTo[i],angle,graph.nodes[0].nodesTo[i].position,rad/2);
+                    drawSubWedge(graph.nodes[0].nodesTo[i],angle,graph.nodes[0].nodesTo[i].position,rad/1.5,angle*i);
+                }
+                console.log(angle*i);
+            }
+        }
+
+        function drawSubWedge(node,angle,position,dis,startingAngle){
+            var angles = subangle(angle,node.nodesTo.length)
+            var trans0 = math.complex({r:1,phi:2*angles})
+            var subStart = startingAngle+angles;
+            var a0 = math.complex({r:1,phi:subStart})
+            //console.log(startingAngle);
+
+            for(var i=0; i < node.nodesTo.length; i++) {
+                if (node.nodesTo.length == 1){
+                    console.log("hola, nodo con un hijo");
+                    console.log(angles+" "+a0+"")
+                }
+                
+                node.nodesTo[i].position.x = position.x + dis*a0.re;
+                node.nodesTo[i].position.y = position.y + dis*a0.im;
+                a0 = math.multiply(a0,trans0);
+                
+                //console.log(node.nodesTo[i]);
+                var nodeGeo = new THREE.SphereGeometry(50,10,10);
+                var nodeMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
+                var sphere = new THREE.Mesh(nodeGeo,nodeMat);
+                sphere.position.x=node.nodesTo[i].position.x;
+                sphere.position.y=node.nodesTo[i].position.y;
+                scene.add(sphere);
+
+                var position3D = new THREE.Vector3(position.x,position.y,0);
+                //console.log(position3D);
+                //console.log(sphere.position);
+                drawEdge(position3D,sphere.position);
+
+                if (node.nodesTo[i].nodesTo.length != 0){
+                    drawSubWedge(node.nodesTo[i],angles,sphere.position,dis/1.5,(subStart+angles*i));
                 }
             }
         }
 
         //create a line between two positions
         function drawEdge(source, target) {
-            material = new THREE.LineBasicMaterial({ color: 0xff0000, opacity: 1, linewidth: 3 });
+            material = new THREE.LineBasicMaterial({ color: 0x00ff00, opacity: 0.8, linewidth: 2 });
 
             var tmp_geo = new THREE.Geometry();
             tmp_geo.vertices.push(source);
@@ -156,35 +193,6 @@
             line.originalScale = 1;
 
             scene.add( line );
-        }
-
-        function drawSubWedge(node,angle,position,dis){
-            //a0 is the angle from where the wedge starts
-            var a0 = math.complex({re:1,im:0})
-            var angles = subangle(2*math.pi,node.nodesTo.length)
-            var trans0 = math.complex({r:1,phi:angles})
-
-            for(var i=0; i < node.nodesTo.length; i++) {
-                a0 = math.multiply(a0,trans0);;
-                node.nodesTo[i].position.x = position.x + dis*a0.re;
-                node.nodesTo[i].position.y = position.y + dis*a0.im;
-                //console.log(node.nodesTo[i]);
-                var nodeGeo = new THREE.SphereGeometry(50,10,10);
-                var nodeMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
-                var sphere = new THREE.Mesh(nodeGeo,nodeMat);
-                sphere.position.x=node.nodesTo[i].position.x;
-                sphere.position.y=node.nodesTo[i].position.y;
-                scene.add(sphere);
-
-                var position3D = new THREE.Vector3(position.x,position.y,0);
-                console.log(position3D);
-                console.log(sphere.position);
-                drawEdge(position3D,sphere.position);
-
-                if (node.nodesTo[i].nodesTo.length != 0){
-                    drawSubWedge(node.nodesTo[i],angle,sphere.position,dis/2);
-                }
-            }
         }
 
         function transformation(z,p,theta){
