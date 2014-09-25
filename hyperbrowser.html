@@ -52,6 +52,9 @@
         geometryC.vertices.shift(); // Remove center vertex
         scene.add(new THREE.Line(geometryC,materialC));
 
+        //add functionality for selecting objects
+        document.addEventListener('mousedown', onDocumentMouseDown, false);
+
         //axisHelper for developing purposes
         //var axisHelper = new THREE.AxisHelper( 400 );
         //scene.add( axisHelper );
@@ -106,7 +109,6 @@
             sphere0.position.x=0;
             sphere0.position.y=0;
             scene.add(sphere0);
-
             //distance to the center for first level of nodes (should be automatic)
             var rad = 1500;
 
@@ -131,6 +133,7 @@
                 var sphere = new THREE.Mesh(nodeGeo,nodeMat);
                 sphere.position.x=graph.nodes[0].nodesTo[i].position.x;
                 sphere.position.y=graph.nodes[0].nodesTo[i].position.y;
+                sphere.name = graph.nodes[0].nodesTo[i].id;
                 scene.add(sphere);
 
                 //draw the edge connecting parent and children
@@ -152,11 +155,7 @@
             //console.log(startingAngle);
 
             for(var i=0; i < node.nodesTo.length; i++) {
-                if (node.nodesTo.length == 1){
-                    console.log("hola, nodo con un hijo");
-                    console.log(angles+" "+a0+"")
-                }
-                
+                             
                 node.nodesTo[i].position.x = position.x + dis*a0.re;
                 node.nodesTo[i].position.y = position.y + dis*a0.im;
                 a0 = math.multiply(a0,trans0);
@@ -167,6 +166,7 @@
                 var sphere = new THREE.Mesh(nodeGeo,nodeMat);
                 sphere.position.x=node.nodesTo[i].position.x;
                 sphere.position.y=node.nodesTo[i].position.y;
+                sphere.name = node.id;
                 scene.add(sphere);
 
                 var position3D = new THREE.Vector3(position.x,position.y,0);
@@ -191,6 +191,7 @@
             line = new THREE.Line( tmp_geo, material, THREE.LinePieces );
             line.scale.x = line.scale.y = line.scale.z = 1;
             line.originalScale = 1;
+            line.name = "edge";
 
             scene.add( line );
         }
@@ -237,6 +238,34 @@
             // render using requestAnimationFrame
             requestAnimationFrame(render);
             renderer.render(scene,camera);
+        }
+
+        //function controlling selection of objects
+        var projector = new THREE.Projector();
+        var tube;
+        function onDocumentMouseDown(event) {
+
+            event.preventDefault();
+
+            var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+            projector.unprojectVector(vector, camera);
+
+            var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+
+            console.log(scene);
+            //var intersects = raycaster.intersectObjects(scene.allChildren);
+
+            
+        }
+
+        function allChildren(){
+            scene.traverse (function (object){
+                if (object instanceof THREE.Mesh){
+                    return object;
+                    //if (object.name === 'q10')
+                        // do what you want with it.
+                }
+            });
         }
 
         //function to initialise the stats for performance purposes

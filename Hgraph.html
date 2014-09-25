@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scalable Hyperbolic Graph</title>
+    <script type="text/javascript" src="HGraph.js"></script>    
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
+    <script type="text/javascript" src="js/stats.js"></script>
+    <script type="text/javascript" src="js/dat.gui.js"></script>
+    <script type="text/javascript" src="js/math.js"></script>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+<div id="stats">
+</div>
+<div id="output">
+</div>
+<script type="text/javascript">
+  $(function () {
+  	//create a random graph or import a graph
+  	var MAX_CHILDREN_PER_NODE = 5;
+  	var DEPTH_LEVEL = 10;
+  	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,DEPTH_LEVEL);
+
+  	//set the scene to play with Three.js
+  	var scene = initScene();
+
+  	//define the material (random colour) and geometry that the vertices will have
+    var vertexGeo = new THREE.SphereGeometry(75,10,10);
+    var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
+
+    //draw the desired graph
+    drawGraph(hgraph);
+
+    //draw the initial Graph
+    function drawGraph(graph){
+    	var spheres = [];
+    	spheres[0] = new THREE.Mesh(vertexGeo,vertexMat);
+        spheres[0].position.x=0;
+        spheres[0].position.y=0;
+        scene.add(spheres[0]);
+    }
+
+  	//Initialise the scene
+  	function initScene(){
+  		//initialise the stats, to check performance
+		var stats = initStats();
+		//create the scene, where all the objects are added
+        var scene = new THREE.Scene();
+        //create the camera and point to the center
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+        camera.position.z = 10000;
+        camera.lookAt(scene.position);
+        //add a circle to see the representation area
+        var radius = 4000,
+        materialC = new THREE.LineBasicMaterial({color: 0x000000}),
+        geometryC = new THREE.CircleGeometry(radius,64);
+        geometryC.vertices.shift(); // Remove center vertex
+        scene.add(new THREE.Line(geometryC,materialC));
+        // create a renderer and set the size
+        var renderer = new THREE.WebGLRenderer({alpha: true});
+        renderer.setClearColor(0xEEEEEE, 1.0);
+        renderer.setSize(window.innerWidth, window.innerHeight);        
+        //append the renderer to the page
+        $("#output").append(renderer.domElement);
+        render();
+        return scene;
+        //function to initialise the stats for performance purposes
+		function initStats() {
+            var stats = new Stats();
+            stats.setMode(0); // 0: fps, 1: ms
+            // Align top-left
+            stats.domElement.style.position = 'absolute';
+            stats.domElement.style.left = '0px';
+            stats.domElement.style.top = '0px';
+            $("#stats").append( stats.domElement );
+            return stats;
+        }
+        //function render that establishes what's done in every iteration
+        function render() {
+            stats.update();
+            requestAnimationFrame(render);
+            renderer.render(scene,camera);
+        }
+  	}
+
+	//Function that creates a random Graph (to be modified when DB available)
+    function createRandomGraph(maxChildren,depthLevel) {
+    	//Create the HGraph
+    	var graph = new HGraph();
+    	//Create first vertex and add it to the HGraph
+    	var id = 0;
+    	var vertex = new Vertex(id);
+    	graph.addVertex(vertex);
+    	id++;    	
+    	//Add some vertices (and links) to the Graph
+	  	var numChildren = Math.floor(Math.random() * maxChildren);
+    	for (var i=0 ; i<=numChildren ; i++){
+    		addChildren(vertex);    		
+    	}
+    	//add a vertex and link between parent and it
+    	function addChildren(parent){
+    		var vertex = new Vertex(id);
+    		graph.addVertex(vertex);
+    		var edge = new Edge(vertex,parent);
+    		graph.addEdge(vertex,parent)
+    		id++;
+    		if (depthLevel>0){
+    			depthLevel--;
+    			var numChildren = Math.floor(Math.random() * maxChildren);
+    			for (var i=0 ; i<=numChildren ; i++){
+    				addChildren(vertex);    		
+    			}
+    		}
+    	}    	
+    	return graph;
+    }
+  });
+</script>
+</body>
+</html>
