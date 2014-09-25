@@ -24,11 +24,30 @@
   $(function () {
   	//create a random graph or import a graph
   	var MAX_CHILDREN_PER_NODE = 5;
-  	var DEPTH_LEVEL = 10;
-  	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,DEPTH_LEVEL);
+  	var MIN_CHILDREN_PER_NODE = 2;
+  	var DEPTH_LEVEL = 4;
+  	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+  	console.log("random graph, number of nodes: "+hgraph.vertices.length);
 
-  	//set the scene to play with Three.js
-  	var scene = initScene();
+  	//Outer limit of the representation area
+  	var radius = 4000;
+
+  	//Create camera
+  	var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+
+  	//create array of spheres to easily interact with them
+    var spheres = [];
+    //create target of objects for detecting when clicked
+    var targetMesh = [];
+    
+    //set the scene to play with Three.js
+  	var scene = initScene(radius);
+
+  	//load the library math.js to ease work with complex numbers
+    var math = mathjs();
+
+    //add listener to allow clickable objects
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
 
   	//define the material (random colour) and geometry that the vertices will have
     var vertexGeo = new THREE.SphereGeometry(75,10,10);
@@ -36,30 +55,95 @@
 
     //draw the desired graph
     drawGraph(hgraph);
+    console.log("number of spheres drawn: "+spheres.length);
+    console.log(scene.children.length);
 
     //draw the initial Graph
     function drawGraph(graph){
-    	var spheres = [];
+    	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
+    	var distance = radius*0.95 / DEPTH_LEVEL;
+    	var maxDeepen = DEPTH_LEVEL;
+
+    	//draw first sphere, node 0
     	spheres[0] = new THREE.Mesh(vertexGeo,vertexMat);
         spheres[0].position.x=0;
         spheres[0].position.y=0;
         scene.add(spheres[0]);
+        targetMesh.push(spheres[0]);
+
+        //calculate angle corresponding each child
+        var angle = (2*math.pi)/(graph.vertices[0].links.length)
+        console.log("angulo del primer nivel: "+angle);
+        //number where to start      
+        var iter = math.complex({r:1,phi:-angle/2});
+        //complex number to multiply to get desired 
+        var trans = math.complex({r:1,phi:angle});
+        
+        for (var i=0 ; i<graph.vertices[0].links.length ; i++){
+        	drawChild(graph.vertices[0].links[i].id,1,iter,angle,spheres[0].position);
+        	iter = math.multiply(iter,trans);
+        }
+
+        function drawChild(hijo,prof,iteration,angle,position){
+        	posX = (distance*prof)*iteration.re;
+	       	posY = (distance*prof)*iteration.im;
+        	if (prof++ <= maxDeepen){
+        	   	//id of the processing vertex
+				var id = graph.vertices[hijo].id;
+	        	spheres[id] = new THREE.Mesh(vertexGeo,vertexMat);
+	        	spheres[id].position.x = posX;
+	       		spheres[id].position.y = posY;
+	       		spheres[id].name ="Mi id es: "+id;
+	       		scene.add(spheres[id]);
+	       		targetMesh.push(spheres[id]);
+
+	       		var position3D = new THREE.Vector3(position.x,position.y,0);
+	       		drawEdge(position3D,spheres[id].position);
+
+	       		//calculate angle corethrsponding each child
+		        var subangle = (2*math.pi)/(graph.vertices[hijo].links.length);	        
+		        //number where to start      
+		        //var iteral = iteration;
+		        var inicio = math.divide(iteration,math.complex({r:1,phi:-subangle/2}));
+		        //iteral = math.multiply(iteral,inicio);
+
+		        //complex number to multiply to get desired 
+		        var transform = math.complex({r:1,phi:subangle});
+       		
+       		
+       			for (var i=0 ; i<graph.vertices[hijo].links.length ; i++){
+   			  		drawChild(graph.vertices[hijo].links[i].id,prof,inicio,subangle,spheres[id].position);
+   			 		inicio = math.multiply(inicio,transform);
+        		}
+    		}
+    	}
+
+    	//draw a line between two positions (expressed in THREE.Vector3)
+    	function drawEdge(vertex1, vertex2){
+    		//define the form of the edge, material and geometry
+    		material = new THREE.LineBasicMaterial({ color: 0x00ff00, opacity: 0.8, linewidth: 2 });
+            var tmp_geo = new THREE.Geometry();
+            tmp_geo.vertices.push(vertex1);
+            tmp_geo.vertices.push(vertex2);
+            line = new THREE.Line(tmp_geo, material, THREE.LinePieces);
+            line.scale.x = line.scale.y = line.scale.z = 1;
+            line.originalScale = 1;
+            scene.add( line );
+    	}
     }
 
   	//Initialise the scene
-  	function initScene(){
+  	function initScene(radius){
   		//initialise the stats, to check performance
 		var stats = initStats();
 		//create the scene, where all the objects are added
         var scene = new THREE.Scene();
-        //create the camera and point to the center
-        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+        //point the camera to the center
         camera.position.z = 10000;
         camera.lookAt(scene.position);
         //add a circle to see the representation area
-        var radius = 4000,
-        materialC = new THREE.LineBasicMaterial({color: 0x000000}),
-        geometryC = new THREE.CircleGeometry(radius,64);
+        var materialC = new THREE.LineBasicMaterial({color: 0x000000});
+        var geometryC = new THREE.CircleGeometry(radius,64);
         geometryC.vertices.shift(); // Remove center vertex
         scene.add(new THREE.Line(geometryC,materialC));
         // create a renderer and set the size
@@ -89,32 +173,48 @@
         }
   	}
 
+  	var projector = new THREE.Projector();
+    var tube;
+    function onDocumentMouseDown(event) {
+        event.preventDefault();
+        var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+        projector.unprojectVector(vector, camera);
+        var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
+        var intersects = raycaster.intersectObjects(targetMesh);
+
+        if (intersects.length > 0) { 
+        	console.log("Pinchaste el vertex: "+intersects[0].object.name);
+        }
+    }
+
 	//Function that creates a random Graph (to be modified when DB available)
-    function createRandomGraph(maxChildren,depthLevel) {
+    function createRandomGraph(maxChildren,minChildren,depthLevel) {
     	//Create the HGraph
     	var graph = new HGraph();
+    	var depth = depthLevel;
+    	console.log("Creating graph with depth: "+depth);
     	//Create first vertex and add it to the HGraph
     	var id = 0;
     	var vertex = new Vertex(id);
     	graph.addVertex(vertex);
     	id++;    	
     	//Add some vertices (and links) to the Graph
-	  	var numChildren = Math.floor(Math.random() * maxChildren);
-    	for (var i=0 ; i<=numChildren ; i++){
-    		addChildren(vertex);    		
-    	}
+	  	var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
+	  	console.log("number of children: "+numChildren);
+    	for (var i=0 ; i<numChildren ; i++){
+    		console.log("-"+id);
+    		addChildren(vertex,depth-1);
+       	}
     	//add a vertex and link between parent and it
-    	function addChildren(parent){
-    		var vertex = new Vertex(id);
-    		graph.addVertex(vertex);
-    		var edge = new Edge(vertex,parent);
-    		graph.addEdge(vertex,parent)
-    		id++;
-    		if (depthLevel>0){
-    			depthLevel--;
-    			var numChildren = Math.floor(Math.random() * maxChildren);
-    			for (var i=0 ; i<=numChildren ; i++){
-    				addChildren(vertex);    		
+    	function addChildren(parent,prof){
+    		if (prof>=0){
+	    		var vertix = new Vertex(id);
+	    		graph.addVertex(vertix);
+	    		graph.addEdge(vertix,parent)
+	    		id++;
+	    		var numiChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
+    			for (var i=0 ; i<numiChildren ; i++){
+    				addChildren(vertix,prof-1);    		
     			}
     		}
     	}    	
