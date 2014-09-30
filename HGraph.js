@@ -6,19 +6,12 @@
 
 function HGraph(){
   this.vertices = [];
-  this.edges = [];
+  //this.edges = [];
 }
 
 //Method to add a Vertex to the Graph
-HGraph.prototype.addVertex = function(vertex){
-  this.vertices.push(vertex);
-}
-
-//Method to add an Edge to the Graph
-HGraph.prototype.addEdge = function(son,parent){
-  //var edge = new Edge(son,parent);
-  //this.edges.push(edge);
-  //vertex1.links.push(vertex2);
+HGraph.prototype.addVertex = function(son,parent){
+  this.vertices.push(son);
   parent.links.push(son);
 }
 
@@ -27,6 +20,16 @@ function Vertex(id){
   this.id = id;
   this.links = [];
 }
+
+//Method to add an Edge to the Graph
+//HGraph.prototype.addEdge = function(son,parent){
+  //var edge = new Edge(son,parent);
+  //this.edges.push(edge);
+  //vertex1.links.push(vertex2);
+  
+//}
+
+
 
 //Constructor for Edges, simply a link between two vertices
 //function Edge(vertex1,vertex2){
