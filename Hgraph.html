@@ -36,7 +36,7 @@
   	//create a random graph or import a graph
   	var MAX_CHILDREN_PER_NODE = 4;
   	var MIN_CHILDREN_PER_NODE = 2;
-  	var DEPTH_LEVEL = 6;
+  	var DEPTH_LEVEL = 7;
   	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
   	console.log("random graph, number of nodes: "+hgraph.vertices.length);
     
@@ -51,6 +51,8 @@
 
   	//Outer limit of the representation area
   	var radius = 4000;
+
+    var system;
 
   	//Create camera
   	var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
@@ -107,7 +109,7 @@
     	
         //Create the geometry and material for the particle system
         var geom = new THREE.Geometry();
-        var material = new THREE.PointCloudMaterial({size: 200,vertexColors: true,});
+        var material = new THREE.PointCloudMaterial({size: 400,vertexColors: true,});
 
         var particle = new THREE.Vector3(0,0,0);
         geom.vertices.push(particle);
@@ -137,7 +139,7 @@
         	iter = math.multiply(iter,trans);
         }
 
-        var system = new THREE.PointCloud(geom, material);
+        system = new THREE.PointCloud(geom, material);
         console.log(system);
         scene.add(system);
 
@@ -257,13 +259,27 @@
         event.preventDefault();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         projector.unprojectVector(vector, camera);
-        var raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
-        var intersects = raycaster.intersectObjects(targetMesh);
+
+        var raycaster = new THREE.Raycaster()
+
+        raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+
+        var intersects = raycaster.intersectObject(system);
+
+        console.log(intersects);
 
         if (intersects.length > 0) { 
-        	console.log("Pinchaste el vertex: "+intersects[0].object.name);
+            console.log(intersects[0].index);  
+            console.log("hola");
         }
     }
+
+    /**function OnMouseMove(evt) {
+        // do some transform update on object
+
+        // after done updating - draw!
+        draw();
+    }*/
 
     function onWindowResize() {
 
