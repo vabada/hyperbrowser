@@ -22,6 +22,8 @@
 <body>
 <div id="stats">
 </div>
+<div id="numberOfNodes">
+</div>
 <div id="content">
     <div id="output">
     </div>
@@ -37,6 +39,14 @@
   	var DEPTH_LEVEL = 6;
   	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
   	console.log("random graph, number of nodes: "+hgraph.vertices.length);
+    
+    // Align top-right
+    document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
+    document.getElementById('numberOfNodes').style.position = 'absolute';
+    document.getElementById('numberOfNodes').style.right = '0px';
+    document.getElementById('numberOfNodes').style.top = '0px';
+    $("#numberOfNodes").append( numberOfNodes.domElement );
+
     //console.log(hgraph.vertices);
 
   	//Outer limit of the representation area
@@ -198,8 +208,6 @@
         rendererStats.domElement.style.bottom   = '0px'
         document.body.appendChild( rendererStats.domElement )
 
-
-
 		//create the scene, where all the objects are added
         var scene = new THREE.Scene();
         //point the camera to the center
@@ -217,10 +225,9 @@
         renderer.autoUpdateObjects = false;
         //append the renderer to the page
         $("#output").append(renderer.domElement);
-        var isRunning = true;
-        render();
-        //poner a false para no actualizar siempre, poner a true cuando ocurra un evento que necesite actualizacion
-        //var isRunning = false;
+        //we ask for a frame draw
+        requestAnimationFrame(render);
+       
         return scene;
         //function to initialise the stats for performance purposes
 		function initStats() {
@@ -237,7 +244,8 @@
         function render() {
             stats.update();
             rendererStats.update(renderer);
-            if (isRunning) requestAnimationFrame(render);
+
+            //if (isRunning) requestAnimationFrame(render);
             //requestAnimationFrame(render);
             renderer.render(scene,camera);
         }
