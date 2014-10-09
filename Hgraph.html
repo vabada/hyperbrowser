@@ -6,12 +6,15 @@
     <script type="text/javascript" src="js/three.js"></script>
     <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
+    <script type="text/javascript" src='js/threex.rendererstats.js'></script>
     <script type="text/javascript" src="js/dat.gui.js"></script>
     <script type="text/javascript" src="js/math.js"></script>
     <style>
         body{margin: 0; overflow: hidden;}
-        #output{width: 70%;}
-        #interaction{width: 30%;}
+        #content{overflow: hidden;}
+        #output{width: 70%;float:left;}
+        #interaction{width: 30%;float:right;}
+        
         }
 </style>
     </style>
@@ -29,18 +32,20 @@
 <script type="text/javascript">
   $(function () {
   	//create a random graph or import a graph
-  	var MAX_CHILDREN_PER_NODE = 5;
-  	var MIN_CHILDREN_PER_NODE = 1;
+  	var MAX_CHILDREN_PER_NODE = 4;
+  	var MIN_CHILDREN_PER_NODE = 2;
   	var DEPTH_LEVEL = 6;
   	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
   	console.log("random graph, number of nodes: "+hgraph.vertices.length);
-    console.log(hgraph.vertices);
+    //console.log(hgraph.vertices);
 
   	//Outer limit of the representation area
   	var radius = 4000;
 
   	//Create camera
   	var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100000);
+    //Create material for edges
+    var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00});
 
   	//create array of spheres to easily interact with them
     var spheres = [];
@@ -55,58 +60,107 @@
 
     //add listener to allow clickable objects
     document.addEventListener('mousedown', onDocumentMouseDown, false);
+    document.addEventListener('resize', onWindowResize, false );
 
-  	//define the material (random colour) and geometry that the vertices will have
-    var vertexGeo = new THREE.SphereGeometry(75,10,10);
-    var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
+    //define the material (random colour) and geometry that the vertices will have
+    //var vertexGeo = new THREE.SphereGeometry(75,10,10);
+    //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
 
     //draw the desired graph
     drawGraph(hgraph);
-    console.log("number of spheres drawn: "+spheres.length);
-    console.log(scene.children.length);
+    //console.log("number of spheres drawn: "+spheres.length);
+    //console.log(scene.children.length);
+    //console.log(scene);
+
+    //delete the graph
+    function deleteGraph(){
+        scene.traverse (function (object){
+            if (object instanceof THREE.Line){
+                scene.remove(object);
+            }
+            if (object instanceof THREE.Mesh){
+                scene.remove(object);
+            }
+        });
+        var materialC = new THREE.LineBasicMaterial({color: 0x000000});
+        var geometryC = new THREE.CircleGeometry(radius,64);
+        geometryC.vertices.shift(); // Remove center vertex
+        scene.add(new THREE.Line(geometryC,materialC));
+    }
 
     //draw the initial Graph
     function drawGraph(graph){
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
-    	var distance = radius*0.95 / DEPTH_LEVEL;
+    	var distance = radius*0.96 / DEPTH_LEVEL;
     	var maxDeepen = DEPTH_LEVEL;
 
-    	//draw first sphere, node 0
-    	spheres[0] = new THREE.Mesh(vertexGeo,vertexMat);
-        spheres[0].position.x=0;
-        spheres[0].position.y=0;
-        scene.add(spheres[0]);
-        targetMesh.push(spheres[0]);
+    	
+        //Create the geometry and material for the particle system
+        var geom = new THREE.Geometry();
+        var material = new THREE.PointCloudMaterial({size: 200,vertexColors: true,});
+
+        var particle = new THREE.Vector3(0,0,0);
+        geom.vertices.push(particle);
+        geom.colors.push(new THREE.Color(new THREE.Color(Math.random()*0xffffff)));
+
+        //var particle = new THREE.Particle(material);
+        //particle.position.set(0, 0, 0);
+        //scene.add(particle);
+
+        //draw first sphere, node 0
+    	//spheres[0] = new THREE.Mesh(vertexGeo,vertexMat);
+        // spheres[0].position.x=0;
+        // spheres[0].position.y=0;
+        // scene.add(spheres[0]);
+        // targetMesh.push(spheres[0]);
 
         //calculate angle corresponding each child
         var angle = (2*math.pi)/(graph.vertices[0].links.length)
-        console.log("angulo del primer nivel: "+angle);
+        //console.log("angulo del primer nivel: "+angle);
         //number where to start      
         var iter = math.complex({r:1,phi:-angle/2});
         //complex number to multiply to get desired 
         var trans = math.complex({r:1,phi:angle});
         
         for (var i=0 ; i<graph.vertices[0].links.length ; i++){
-        	drawChild(graph.vertices[0].links[i].id,1,iter,angle,spheres[0].position);
+        	drawChild(graph.vertices[0].links[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
 
-        function drawChild(hijo,prof,iteration,angle,position){
+        var system = new THREE.PointCloud(geom, material);
+        console.log(system);
+        scene.add(system);
+
+
+        function drawChild(hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
         	if (prof++ <= maxDeepen){
         	   	//id of the processing vertex
 				var id = graph.vertices[hijo].id;
-                var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
-	        	spheres[id] = new THREE.Mesh(vertexGeo,vertexMat);
-	        	spheres[id].position.x = posX;
-	       		spheres[id].position.y = posY;
-	       		spheres[id].name ="Mi id es: "+id;
-	       		scene.add(spheres[id]);
-	       		targetMesh.push(spheres[id]);
+                //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
+                
+                var particle = new THREE.Vector3(posX, posY, 0);
+                geom.vertices.push(particle);
+                geom.colors.push(new THREE.Color(Math.random()*0xffffff));
 
-	       		var position3D = new THREE.Vector3(position.x,position.y,0);
-	       		drawEdge(position3D,spheres[id].position);
+
+                //var particle = new THREE.Particle(material);
+                //particle.position.set(posX, posY, 0);
+                //scene.add(particle);
+
+
+	        	//spheres[id] = new THREE.Mesh(vertexGeo,vertexMat);
+	        	//spheres[id].position.x = posX;
+	       		//spheres[id].position.y = posY;
+	       		//spheres[id].name ="My id is: "+id;
+                //(un)comment next line to (un)show balls for nodes
+	       		//scene.add(spheres[id]);
+	       		//targetMesh.push(spheres[id]);
+
+	       	    var position3D = new THREE.Vector3(positionX,positionY,0);
+                //if (prof <= 5)
+	       		    drawEdge(position3D,particle);
 
 	       		//calculate angle corethrsponding each child
 		        var subangle = (angle)/(graph.vertices[hijo].links.length);	        
@@ -118,7 +172,7 @@
 		        var transform = math.complex({r:1,phi:subangle});       		
        		
        			for (var i=0 ; i<graph.vertices[hijo].links.length ; i++){
-   			  		drawChild(graph.vertices[hijo].links[i].id,prof,inicio,subangle,spheres[id].position);
+   			  		drawChild(graph.vertices[hijo].links[i].id,prof,inicio,subangle,particle.x,particle.y);
    			 		inicio = math.multiply(inicio,transform);
         		}
     		}
@@ -126,15 +180,11 @@
 
     	//draw a line between two positions (expressed in THREE.Vector3)
     	function drawEdge(vertex1, vertex2){
-    		//define the form of the edge, material and geometry
-    		material = new THREE.LineBasicMaterial({ color: 0xaaaa00, opacity: 0.8, linewidth: 2 });
-            var tmp_geo = new THREE.Geometry();
-            tmp_geo.vertices.push(vertex1);
-            tmp_geo.vertices.push(vertex2);
-            line = new THREE.Line(tmp_geo, material, THREE.LinePieces);
-            line.scale.x = line.scale.y = line.scale.z = 1;
-            line.originalScale = 1;
-            scene.add( line );
+    		var edgesGeometry = new THREE.Geometry();
+            edgesGeometry.vertices.push(vertex1);
+            edgesGeometry.vertices.push(vertex2);
+            edge = new THREE.Line(edgesGeometry,edgesMaterial);
+            scene.add(edge);
     	}
     }
 
@@ -142,6 +192,14 @@
   	function initScene(radius){
   		//initialise the stats, to check performance
 		var stats = initStats();
+        var rendererStats   = new THREEx.RendererStats()
+        rendererStats.domElement.style.position = 'absolute'
+        rendererStats.domElement.style.left = '0px'
+        rendererStats.domElement.style.bottom   = '0px'
+        document.body.appendChild( rendererStats.domElement )
+
+
+
 		//create the scene, where all the objects are added
         var scene = new THREE.Scene();
         //point the camera to the center
@@ -155,10 +213,14 @@
         // create a renderer and set the size
         var renderer = new THREE.WebGLRenderer({alpha: true});
         renderer.setClearColor(0xEEEEEE, 1.0);
-        renderer.setSize(window.innerWidth, window.innerHeight);        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.autoUpdateObjects = false;
         //append the renderer to the page
         $("#output").append(renderer.domElement);
+        var isRunning = true;
         render();
+        //poner a false para no actualizar siempre, poner a true cuando ocurra un evento que necesite actualizacion
+        //var isRunning = false;
         return scene;
         //function to initialise the stats for performance purposes
 		function initStats() {
@@ -174,7 +236,9 @@
         //function render that establishes what's done in every iteration
         function render() {
             stats.update();
-            requestAnimationFrame(render);
+            rendererStats.update(renderer);
+            if (isRunning) requestAnimationFrame(render);
+            //requestAnimationFrame(render);
             renderer.render(scene,camera);
         }
   	}
@@ -192,6 +256,18 @@
         	console.log("Pinchaste el vertex: "+intersects[0].object.name);
         }
     }
+
+    function onWindowResize() {
+
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize( window.innerWidth, window.innerHeight );
+
+        controls.handleResize();
+
+    }
+
 
 	//Function that creates a random Graph (to be modified when DB available)
     function createRandomGraph(maxChildren,minChildren,depthLevel) {
@@ -221,7 +297,7 @@
     			}
     		}
     	}
-        console.log(graph.vertices);	
+        //console.log(graph.vertices);	
     	return graph;
     }
   });
