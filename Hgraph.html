@@ -36,6 +36,8 @@
     </div>
     <div id="interaction">
     </div>
+    <div id="clicked">
+    </div>
 </div>
 <script type="text/javascript">
   $(function () {
@@ -44,14 +46,19 @@
   	var MIN_CHILDREN_PER_NODE = 2;
   	var DEPTH_LEVEL = 3;
   	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-  	console.log("random graph, number of nodes: "+hgraph.vertices.length);
+  	//console.log("random graph, number of nodes: "+hgraph.vertices.length);
     
     // Align top-right
     document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
     document.getElementById('numberOfNodes').style.position = 'absolute';
-    document.getElementById('numberOfNodes').style.right = '0px';
-    document.getElementById('numberOfNodes').style.top = '0px';
+    document.getElementById('numberOfNodes').style.right = '10px';
+    document.getElementById('numberOfNodes').style.top = '10px';
     $("#numberOfNodes").append( numberOfNodes.domElement );
+
+    document.getElementById('clicked').style.position = 'absolute';
+    document.getElementById('clicked').style.right = '10px';
+    document.getElementById('clicked').style.bottom = '10px';
+    $("#clicked").append( clicked.domElement );
 
     //console.log(hgraph.vertices);
 
@@ -61,7 +68,7 @@
     var system;
 
   	//Create camera
-  	var camera = new THREE.PerspectiveCamera(45, window.innerHeight/ window.innerHeight, 0.1, 100000);
+  	var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
     //Create material for edges
     var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00});
 
@@ -76,11 +83,17 @@
   	//load the library math.js to ease work with complex numbers
     var math = mathjs();
 
+    //variables for the size of the proper representation area
+    var graphWidthArea,graphHeigthArea;
+
     //add listener to allow clickable objects
     document.addEventListener('mousedown', onDocumentMouseDown, false);
 
-    //add listener
+    //add listener for resizing window
     document.addEventListener('resize', onWindowResize, false );
+
+    //add listener for moving mouse
+    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
     //define the material (random colour) and geometry that the vertices will have
     //var vertexGeo = new THREE.SphereGeometry(75,10,10);
@@ -148,7 +161,7 @@
         }
 
         system = new THREE.PointCloud(geom, material);
-        console.log(system);
+        //console.log(system);
         scene.add(system);
 
 
@@ -232,7 +245,12 @@
         var renderer = new THREE.WebGLRenderer({alpha: true});
         renderer.setClearColor(0xEEEEEE, 1.0);
         //setSize(width,height)
-        renderer.setSize(window.innerHeight+window.innerHeight/3, window.innerHeight);
+
+        //graphWidthArea = window.innerHeight+window.innerHeight/3;
+        graphWidthArea = window.innerWidth;
+        graphHeigthArea = window.innerHeight;
+
+        renderer.setSize(graphWidthArea, graphHeigthArea);
         renderer.autoUpdateObjects = false;
         //append the renderer to the page
         $("#output").append(renderer.domElement);
@@ -264,22 +282,42 @@
 
   	var projector = new THREE.Projector();
     var tube;
+
+    //Print the properties of a node  if is clicked
     function onDocumentMouseDown(event) {
         event.preventDefault();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         projector.unprojectVector(vector, camera);
 
-        var raycaster = new THREE.Raycaster()
+        var raycaster = new THREE.Raycaster();
+        raycaster.params.PointCloud.threshold = 90;
 
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
 
-        var intersects = raycaster.intersectObject(system);
+        var intersects = raycaster.intersectObject(system);        
 
-        console.log(intersects);
+        if (intersects.length > 0) {
+            document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
+            console.log(system);
+        }
+    }
 
-        if (intersects.length > 0) { 
-            console.log(intersects[0].index);  
-            console.log("hola");
+    //Highlighting a node if mouse is over
+    function onDocumentMouseMove(event) {
+        event.preventDefault();
+
+        var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+        projector.unprojectVector(vector, camera);
+
+        var raycaster = new THREE.Raycaster();
+        raycaster.params.PointCloud.threshold = 90;
+
+        raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+
+        var intersects = raycaster.intersectObject(system);        
+
+        if (intersects.length > 0) {
+            document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;            
         }
     }
 
@@ -292,12 +330,14 @@
 
     function onWindowResize() {
 
+
+
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
 
         renderer.setSize( window.innerWidth, window.innerHeight );
 
-        controls.handleResize();
+        //controls.handleResize();
 
     }
 
@@ -307,7 +347,7 @@
     	//Create the HGraph
     	var graph = new HGraph();
     	var depth = depthLevel;
-    	console.log("Creating graph with depth: "+depth);
+    	//console.log("Creating graph with depth: "+depth);
     	//Create first vertex and add it to the HGraph
     	var id = 0;
     	var vertex = new Vertex(id);
