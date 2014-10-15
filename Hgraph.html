@@ -44,7 +44,7 @@
   	//create a random graph or import a graph
   	var MAX_CHILDREN_PER_NODE = 4;
   	var MIN_CHILDREN_PER_NODE = 2;
-  	var DEPTH_LEVEL = 3;
+  	var DEPTH_LEVEL = 5;
   	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
   	//console.log("random graph, number of nodes: "+hgraph.vertices.length);
     
@@ -79,6 +79,12 @@
     
     //set the scene to play with Three.js
   	var scene = initScene(radius);
+
+    //For selecting nodes
+    var sphereGeometry = new THREE.SphereGeometry(105,10,10);
+    var sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff0000,opacity:1});
+    var sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
+    scene.add(sphere);
 
   	//load the library math.js to ease work with complex numbers
     var math = mathjs();
@@ -133,8 +139,10 @@
         var material = new THREE.PointCloudMaterial({size: 400,vertexColors: true,});
 
         var particle = new THREE.Vector3(0,0,0);
+        var particleColor =  new THREE.Color(Math.random()*0xffffff);
         geom.vertices.push(particle);
-        geom.colors.push(new THREE.Color(new THREE.Color(Math.random()*0xffffff)));
+        geom.colors.push(particleColor);
+        //geom.colors.push(new THREE.Color(Math.random()*0xffffff)));
 
         //var particle = new THREE.Particle(material);
         //particle.position.set(0, 0, 0);
@@ -176,7 +184,7 @@
                 var particle = new THREE.Vector3(posX, posY, 0);
                 geom.vertices.push(particle);
                 geom.colors.push(new THREE.Color(Math.random()*0xffffff));
-
+                //geom.colors.push(particleColor);
 
                 //var particle = new THREE.Particle(material);
                 //particle.position.set(posX, posY, 0);
@@ -193,7 +201,7 @@
 
 	       	    var position3D = new THREE.Vector3(positionX,positionY,0);
                 //if (prof <= 5)
-	       		    drawEdge(position3D,particle);
+	       		    //drawEdge(position3D,particle);
 
 	       		//calculate angle corethrsponding each child
 		        var subangle = (angle)/(graph.vertices[hijo].links.length);	        
@@ -317,20 +325,14 @@
         var intersects = raycaster.intersectObject(system);        
 
         if (intersects.length > 0) {
-            document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;            
+            document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
+            sphere.position.x= ((event.clientX / window.innerWidth ) * 2 - 1)*4000;
+            sphere.position.y= (-( event.clientY / window.innerHeight ) * 2 + 1)*4000;
+            //console.log(sphere.position);
         }
     }
 
-    /**function OnMouseMove(evt) {
-        // do some transform update on object
-
-        // after done updating - draw!
-        draw();
-    }*/
-
     function onWindowResize() {
-
-
 
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
@@ -338,9 +340,7 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
 
         //controls.handleResize();
-
     }
-
 
 	//Function that creates a random Graph (to be modified when DB available)
     function createRandomGraph(maxChildren,minChildren,depthLevel) {
