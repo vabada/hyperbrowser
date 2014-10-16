@@ -16,14 +16,7 @@
         }
         #content{
             overflow:hidden;
-        }
-        #output{
-            width: 700px;
-            float:left;
-        }
-        #interaction{
-            float:right;
-        }                
+        }         
     </style>
 </head>
 <body>
@@ -34,109 +27,119 @@
     </div>
     <div id="output">
     </div>
-    <div id="interaction">
-    </div>
     <div id="clicked">
+    </div>
+    <div id="rendererStats">
     </div>
 </div>
 <script type="text/javascript">
   $(function () {
-  	//create a random graph or import a graph
-  	var MAX_CHILDREN_PER_NODE = 4;
-  	var MIN_CHILDREN_PER_NODE = 2;
-  	var DEPTH_LEVEL = 5;
-  	var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-  	//console.log("random graph, number of nodes: "+hgraph.vertices.length);
-    
-    // Align top-right
-    document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
-    document.getElementById('numberOfNodes').style.position = 'absolute';
-    document.getElementById('numberOfNodes').style.right = '10px';
-    document.getElementById('numberOfNodes').style.top = '10px';
-    $("#numberOfNodes").append( numberOfNodes.domElement );
 
-    document.getElementById('clicked').style.position = 'absolute';
-    document.getElementById('clicked').style.right = '10px';
-    document.getElementById('clicked').style.bottom = '10px';
-    $("#clicked").append( clicked.domElement );
+    //load the library math.js to ease work with complex numbers
+    var math = mathjs();
 
-    //console.log(hgraph.vertices);
-
-  	//Outer limit of the representation area
+  	//outer limit of the representation area
   	var radius = 4000;
+    //variables for the size of the proper representation area
+    var graphWidthArea,graphHeigthArea;
 
+    //system of points (particles), what is represented
     var system;
 
-  	//Create camera
-  	var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
-    //Create material for edges
-    var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00});
+    //create material for edges
+    var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
 
   	//create array of spheres to easily interact with them
-    var spheres = [];
-    //create target of objects for detecting when clicked
-    var targetMesh = [];
+    //var spheres = [];
+    //create target of spheres for detecting when clicked
+    //var targetMesh = [];  
     
-    //set the scene to play with Three.js
-  	var scene = initScene(radius);
+    //initialise the stats, to check performance-------------------------------
+    var stats = new Stats();
+    stats.setMode(0); // 0: fps, 1: ms
+    // Align top-left
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    $("#stats").append( stats.domElement );
+    var rendererStats   = new THREEx.RendererStats()
+    rendererStats.domElement.style.position = 'absolute'
+    rendererStats.domElement.style.left = '0px'
+    rendererStats.domElement.style.bottom   = '0px'
+    //document.body.appendChild( rendererStats.domElement )
+    $("#rendererStats").append( rendererStats.domElement );
 
-    //For selecting nodes
+    //create the scene, where all the objects are added
+    var scene = new THREE.Scene();
+
+    //create camera
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
+    //point the camera to the center
+    camera.position.z = 10000;
+    camera.lookAt(scene.position);
+
+    //sphere to be drawn when mouse is over a node
     var sphereGeometry = new THREE.SphereGeometry(105,10,10);
     var sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff0000,opacity:1});
     var sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
     scene.add(sphere);
 
-  	//load the library math.js to ease work with complex numbers
-    var math = mathjs();
-
-    //variables for the size of the proper representation area
-    var graphWidthArea,graphHeigthArea;
-
-    //add listener to allow clickable objects
-    document.addEventListener('mousedown', onDocumentMouseDown, false);
-
-    //add listener for resizing window
-    document.addEventListener('resize', onWindowResize, false );
-
-    //add listener for moving mouse
-    document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    //add a circle to see the representation area
+    var materialC = new THREE.LineBasicMaterial({color: 0x000000});
+    var geometryC = new THREE.CircleGeometry(radius,64);
+    geometryC.vertices.shift(); // Remove center vertex
+    scene.add(new THREE.Line(geometryC,materialC));
 
     //define the material (random colour) and geometry that the vertices will have
     //var vertexGeo = new THREE.SphereGeometry(75,10,10);
     //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
 
+    //create a random graph or import a graph
+    var MAX_CHILDREN_PER_NODE = 4;
+    var MIN_CHILDREN_PER_NODE = 2;
+    var DEPTH_LEVEL = 3;
+    var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+    //var hgraph = importGraph("/path/to/graph/");
+    //console.log("random graph, number of nodes: "+hgraph.vertices.length);
+
     //draw the desired graph
-    drawGraph(hgraph);
-    //console.log("number of spheres drawn: "+spheres.length);
+    drawGraph();
     //console.log(scene.children.length);
     //console.log(scene);
 
-    //delete the graph
-    function deleteGraph(){
-        scene.traverse (function (object){
-            if (object instanceof THREE.Line){
-                scene.remove(object);
-            }
-            if (object instanceof THREE.Mesh){
-                scene.remove(object);
-            }
-        });
-        var materialC = new THREE.LineBasicMaterial({color: 0x000000});
-        var geometryC = new THREE.CircleGeometry(radius,64);
-        geometryC.vertices.shift(); // Remove center vertex
-        scene.add(new THREE.Line(geometryC,materialC));
+    // create a renderer and set the size
+    var renderer = new THREE.WebGLRenderer({alpha: true});
+    renderer.setClearColor(0xEEEEEE, 1.0);
+    //renderer.setSize(WIDTH,HEIGHT)
+    //graphWidthArea = window.innerHeight+window.innerHeight/3;
+    graphWidthArea = window.innerWidth;
+    graphHeigthArea = window.innerHeight;
+    renderer.setSize(graphWidthArea, graphHeigthArea);
+    renderer.autoUpdateObjects = false;
+    //append the renderer to the page
+    $("#output").append(renderer.domElement);
+
+    //we ask for a frame draw
+    requestAnimationFrame(render);
+
+    //function render that establishes what's done in every iteration
+    function render() {
+        stats.update();
+        rendererStats.update(renderer);
+        //if (isRunning) //controls rendering process throug variable
+        requestAnimationFrame(render);
+        renderer.render(scene,camera);
     }
 
     //draw the initial Graph
-    function drawGraph(graph){
+    function drawGraph(){
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
     	var distance = radius*0.96 / DEPTH_LEVEL;
     	var maxDeepen = DEPTH_LEVEL;
-
     	
         //Create the geometry and material for the particle system
         var geom = new THREE.Geometry();
-        var material = new THREE.PointCloudMaterial({size: 400,vertexColors: true,});
+        var material = new THREE.PointCloudMaterial({size:400,vertexColors:true,});
 
         var particle = new THREE.Vector3(0,0,0);
         var particleColor =  new THREE.Color(Math.random()*0xffffff);
@@ -156,29 +159,28 @@
         // targetMesh.push(spheres[0]);
 
         //calculate angle corresponding each child
-        var angle = (2*math.pi)/(graph.vertices[0].links.length)
+        var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
         //console.log("angulo del primer nivel: "+angle);
         //number where to start      
         var iter = math.complex({r:1,phi:-angle/2});
         //complex number to multiply to get desired 
         var trans = math.complex({r:1,phi:angle});
         
-        for (var i=0 ; i<graph.vertices[0].links.length ; i++){
-        	drawChild(graph.vertices[0].links[i].id,1,iter,angle,particle.x,particle.y);
+        for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
+        	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
 
         system = new THREE.PointCloud(geom, material);
-        //console.log(system);
+        console.log(system);
         scene.add(system);
-
 
         function drawChild(hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
         	if (prof++ <= maxDeepen){
         	   	//id of the processing vertex
-				var id = graph.vertices[hijo].id;
+				var id = hgraph.vertices[hijo].id;
                 //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
                 
                 var particle = new THREE.Vector3(posX, posY, 0);
@@ -190,7 +192,6 @@
                 //particle.position.set(posX, posY, 0);
                 //scene.add(particle);
 
-
 	        	//spheres[id] = new THREE.Mesh(vertexGeo,vertexMat);
 	        	//spheres[id].position.x = posX;
 	       		//spheres[id].position.y = posY;
@@ -201,10 +202,10 @@
 
 	       	    var position3D = new THREE.Vector3(positionX,positionY,0);
                 //if (prof <= 5)
-	       		    //drawEdge(position3D,particle);
+	       		    drawEdge(position3D,particle);
 
 	       		//calculate angle corethrsponding each child
-		        var subangle = (angle)/(graph.vertices[hijo].links.length);	        
+		        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);	        
 		        //number where to start      
 		        var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
                 inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
@@ -212,8 +213,8 @@
 		        //complex number to multiply to get desired 
 		        var transform = math.complex({r:1,phi:subangle});       		
        		
-       			for (var i=0 ; i<graph.vertices[hijo].links.length ; i++){
-   			  		drawChild(graph.vertices[hijo].links[i].id,prof,inicio,subangle,particle.x,particle.y);
+       			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
+   			  		drawChild(hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
    			 		inicio = math.multiply(inicio,transform);
         		}
     		}
@@ -229,149 +230,92 @@
     	}
     }
 
-  	//Initialise the scene
-  	function initScene(radius){
-  		//initialise the stats, to check performance
-		var stats = initStats();
-        var rendererStats   = new THREEx.RendererStats()
-        rendererStats.domElement.style.position = 'absolute'
-        rendererStats.domElement.style.left = '0px'
-        rendererStats.domElement.style.bottom   = '0px'
-        document.body.appendChild( rendererStats.domElement )
-
-		//create the scene, where all the objects are added
-        var scene = new THREE.Scene();
-        //point the camera to the center
-        camera.position.z = 10000;
-        camera.lookAt(scene.position);
-        //add a circle to see the representation area
+    //delete the graph
+    /**function deleteGraph(){
+        scene.traverse (function (object){
+            if (object instanceof THREE.Line){
+                scene.remove(object);
+            }
+            if (object instanceof THREE.Mesh){
+                scene.remove(object);
+            }
+        });
         var materialC = new THREE.LineBasicMaterial({color: 0x000000});
         var geometryC = new THREE.CircleGeometry(radius,64);
         geometryC.vertices.shift(); // Remove center vertex
         scene.add(new THREE.Line(geometryC,materialC));
-        // create a renderer and set the size
-        var renderer = new THREE.WebGLRenderer({alpha: true});
-        renderer.setClearColor(0xEEEEEE, 1.0);
-        //setSize(width,height)
+    }*/
 
-        //graphWidthArea = window.innerHeight+window.innerHeight/3;
-        graphWidthArea = window.innerWidth;
-        graphHeigthArea = window.innerHeight;
+    //information about number of nodes drawn. Align top-right
+    document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
+    document.getElementById('numberOfNodes').style.position = 'absolute';
+    document.getElementById('numberOfNodes').style.right = '10px';
+    document.getElementById('numberOfNodes').style.top = '10px';
+    $("#numberOfNodes").append( numberOfNodes.domElement );
 
-        renderer.setSize(graphWidthArea, graphHeigthArea);
-        renderer.autoUpdateObjects = false;
-        //append the renderer to the page
-        $("#output").append(renderer.domElement);
-        //we ask for a frame draw
-        requestAnimationFrame(render);
-       
-        return scene;
-        //function to initialise the stats for performance purposes
-		function initStats() {
-            var stats = new Stats();
-            stats.setMode(0); // 0: fps, 1: ms
-            // Align top-left
-            stats.domElement.style.position = 'absolute';
-            stats.domElement.style.left = '0px';
-            stats.domElement.style.top = '0px';
-            $("#stats").append( stats.domElement );
-            return stats;
-        }
-        //function render that establishes what's done in every iteration
-        function render() {
-            stats.update();
-            rendererStats.update(renderer);
+    //information about interaction with nodes. Align bottom-right
+    document.getElementById('clicked').innerHTML = "No interaction bis jetzt";
+    document.getElementById('clicked').style.position = 'absolute';
+    document.getElementById('clicked').style.right = '10px';
+    document.getElementById('clicked').style.bottom = '10px';
+    $("#clicked").append( clicked.domElement );
 
-            //if (isRunning) requestAnimationFrame(render);
-            requestAnimationFrame(render);
-            renderer.render(scene,camera);
-        }
-  	}
+    //------------------------LISTENERS--------------------------
+    //add listener to allow clickable objects
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    //add listener for resizing window
+    document.addEventListener('resize', onWindowResize, false );
+    //add listener for moving mouse
+    document.addEventListener('mousemove', onDocumentMouseMove, false );
 
-  	var projector = new THREE.Projector();
-    var tube;
-
-    //Print the properties of a node  if is clicked
+    //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
         event.preventDefault();
+        //check if some node clicked, for displaying information
+        var projector = new THREE.Projector();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         projector.unprojectVector(vector, camera);
-
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
-
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-
         var intersects = raycaster.intersectObject(system);        
-
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
-            console.log(system);
         }
+        //Update the position for every node
+
+        //we'll start moving the desired to the center
+        //redraw the complete graph with the clicked node in the middle
+
+        //
     }
 
-    //Highlighting a node if mouse is over
+    //highlighting a node if mouse is over
     function onDocumentMouseMove(event) {
         event.preventDefault();
-
+        //check if some node clicked, for displaying information
+        var projector = new THREE.Projector();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         projector.unprojectVector(vector, camera);
-
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
-
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-
         var intersects = raycaster.intersectObject(system);        
-
         if (intersects.length > 0) {
-            document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
-            sphere.position.x= ((event.clientX / window.innerWidth ) * 2 - 1)*4000;
-            sphere.position.y= (-( event.clientY / window.innerHeight ) * 2 + 1)*4000;
+            //play with intersects[0].index
+            //document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
+            //sphere.position.x= ((event.clientX / window.innerWidth ) * 2 - 1)*4000;
+            //sphere.position.y= (-( event.clientY / window.innerHeight ) * 2 + 1)*4000;
             //console.log(sphere.position);
         }
     }
 
+    //proper working when resizing window (apparently not working)
     function onWindowResize() {
-
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-
         renderer.setSize( window.innerWidth, window.innerHeight );
-
         //controls.handleResize();
-    }
-
-	//Function that creates a random Graph (to be modified when DB available)
-    function createRandomGraph(maxChildren,minChildren,depthLevel) {
-    	//Create the HGraph
-    	var graph = new HGraph();
-    	var depth = depthLevel;
-    	//console.log("Creating graph with depth: "+depth);
-    	//Create first vertex and add it to the HGraph
-    	var id = 0;
-    	var vertex = new Vertex(id);
-    	graph.vertices.push(vertex);
-    	id++;    	
-    	//Add some vertices (and links) to the Graph
-	  	var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
-    	for (var i=0 ; i<numChildren ; i++){
-    		addChild(vertex,depth-1);
-       	}
-    	//add a vertex and link between parent and it
-    	function addChild(parent,prof){
-    		if (prof>=0){
-	    		var vertix = new Vertex(id);
-	    		graph.addVertex(vertix,parent);
-	    		id++;
-	    		var numiChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
-    			for (var i=0 ; i<numiChildren ; i++){
-    				addChild(vertix,prof-1);                    
-    			}
-    		}
-    	}
-        //console.log(graph.vertices);	
-    	return graph;
     }
   });
 </script>
