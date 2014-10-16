@@ -84,12 +84,8 @@
     geometryC.vertices.shift(); // Remove center vertex
     scene.add(new THREE.Line(geometryC,materialC));
 
-    //define the material (random colour) and geometry that the vertices will have
-    //var vertexGeo = new THREE.SphereGeometry(75,10,10);
-    //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
-
     //create a random graph or import a graph
-    var MAX_CHILDREN_PER_NODE = 4;
+    var MAX_CHILDREN_PER_NODE = 3;
     var MIN_CHILDREN_PER_NODE = 2;
     var DEPTH_LEVEL = 4;
     var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
@@ -103,7 +99,7 @@
 
     // create a renderer and set the size
     var renderer = new THREE.WebGLRenderer({alpha: true});
-    renderer.setClearColor(0xEEEEEE, 1.0);
+    renderer.setClearColor(0xCCCCCC, 1.0);
     //renderer.setSize(WIDTH,HEIGHT)
     //graphWidthArea = window.innerHeight+window.innerHeight/3;
     graphWidthArea = window.innerWidth;
@@ -121,6 +117,7 @@
         stats.update();
         rendererStats.update(renderer);
         system.geometry.colorsNeedUpdate = true;
+        system.geometry.verticesNeedUpdate = true;
         //if (isRunning) //controls rendering process throug variable
         requestAnimationFrame(render);
         renderer.render(scene,camera);
@@ -130,89 +127,59 @@
     function drawGraph(){
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
     	var distance = radius*0.96 / DEPTH_LEVEL;
-    	var maxDeepen = DEPTH_LEVEL;
-    	
-        //Create the geometry and material for the particle system
+    	var maxDeepen = DEPTH_LEVEL;    	
+        //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
         var material = new THREE.PointCloudMaterial({size:400,vertexColors:true,});
-
+        //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
         var particleColor =  new THREE.Color(Math.random()*0xffffff);
         geom.vertices.push(particle);
-        geom.colors.push(particleColor);
-        //geom.colors.push(new THREE.Color(Math.random()*0xffffff)));
-
-        //var particle = new THREE.Particle(material);
-        //particle.position.set(0, 0, 0);
-        //scene.add(particle);
-
-        //draw first sphere, node 0
-    	//spheres[0] = new THREE.Mesh(vertexGeo,vertexMat);
-        // spheres[0].position.x=0;
-        // spheres[0].position.y=0;
-        // scene.add(spheres[0]);
-        // targetMesh.push(spheres[0]);
-
+        geom.colors.push(particleColor);        
         //calculate angle corresponding each child
         var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
-        //console.log("angulo del primer nivel: "+angle);
         //number where to start      
         var iter = math.complex({r:1,phi:-angle/2});
         //complex number to multiply to get desired 
         var trans = math.complex({r:1,phi:angle});
-        
+        //draw all the linked nodes to the initial node
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
         	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
-
-        system = new THREE.PointCloud(geom, material);
-        scene.add(system);
-
+        //subfunction for drawing recursively every child (linked node)
         function drawChild(hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
         	if (prof++ <= maxDeepen){
         	   	//id of the processing vertex
 				var id = hgraph.vertices[hijo].id;
-                //var vertexMat = new THREE.MeshBasicMaterial({color: Math.random()*0xffffff,opacity:1});
-                
+                //create the particle in the desired position
                 var particle = new THREE.Vector3(posX, posY, 0);
                 geom.vertices.push(particle);
                 geom.colors.push(new THREE.Color(Math.random()*0xffffff));
                 //geom.colors.push(particleColor);
-
-                //var particle = new THREE.Particle(material);
-                //particle.position.set(posX, posY, 0);
-                //scene.add(particle);
-
-	        	//spheres[id] = new THREE.Mesh(vertexGeo,vertexMat);
-	        	//spheres[id].position.x = posX;
-	       		//spheres[id].position.y = posY;
-	       		//spheres[id].name ="My id is: "+id;
-                //(un)comment next line to (un)show balls for nodes
-	       		//scene.add(spheres[id]);
-	       		//targetMesh.push(spheres[id]);
-
 	       	    var position3D = new THREE.Vector3(positionX,positionY,0);
                 //if (prof <= 5)
-	       		    drawEdge(position3D,particle);
+	       		  //drawEdge(position3D,particle);
 
 	       		//calculate angle corethrsponding each child
-		        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);	        
+		        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
 		        //number where to start      
 		        var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
                 inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
-
 		        //complex number to multiply to get desired 
 		        var transform = math.complex({r:1,phi:subangle});       		
-       		
+       		    //draw all the linked nodes to this node
        			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
    			  		drawChild(hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
    			 		inicio = math.multiply(inicio,transform);
         		}
     		}
     	}
+
+        system = new THREE.PointCloud(geom, material);
+        scene.add(system);
 
     	//draw a line between two positions (expressed in THREE.Vector3)
     	function drawEdge(vertex1, vertex2){
@@ -222,6 +189,31 @@
             edge = new THREE.Line(edgesGeometry,edgesMaterial);
             scene.add(edge);
     	}
+    }
+
+    //function reDrawGraph
+    //@param newCenter id of the node to put in the center
+    function reDrawGraph(newCenter){
+        console.log("id del nodo a centrar: "+newCenter);
+        var newGraph = hgraph;
+        console.log(newGraph);
+        for (var i = 0 ; i < hgraph.vertices.length ; i++) {  
+            newGraph.vertices[i].processed = false;
+        }
+
+        //to modify this DEPTH_LEVEL for a method to find it out in the given graph
+        var distance = radius*0.96 / DEPTH_LEVEL;
+        var maxDeepen = DEPTH_LEVEL;  
+
+        console.log(system.geometry.vertices[newCenter]);
+        system.geometry.vertices[0].set(system.geometry.vertices[newCenter].x,
+                                        system.geometry.vertices[newCenter].y,
+                                        system.geometry.vertices[newCenter].z);
+        system.geometry.vertices[newCenter].set(0,0,0);
+
+
+
+
     }
 
     //delete the graph
@@ -275,13 +267,8 @@
         var intersects = raycaster.intersectObject(system);        
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
+            reDrawGraph(intersects[0].index);
         }
-        //Update the position for every node
-
-        //we'll start moving the desired to the center
-        //redraw the complete graph with the clicked node in the middle
-
-        //
     }
 
     var intersectedNode;
@@ -301,18 +288,16 @@
         var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
             if (!mouseOver){
-                console.log("hey, acabo de detectarte")
                 var color = system.geometry.colors[intersects[0].index];
                 originalColor.setRGB(color.r,color.g,color.b);
                 intersectedNode = intersects[0].index;                
                 system.geometry.colors[intersects[0].index].setRGB(1,1,1);
-                mouseOver = true; 
+                mouseOver = true;
+                document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
                 document.body.style.cursor = 'pointer';
             }
         } else {
             if (mouseOver){
-                console.log(originalColor);
-                console.log(intersectedNode);
                 system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
                 mouseOver = false;
                 document.body.style.cursor = 'default';
