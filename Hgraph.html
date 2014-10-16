@@ -78,12 +78,6 @@
     camera.position.z = 10000;
     camera.lookAt(scene.position);
 
-    //sphere to be drawn when mouse is over a node
-    var sphereGeometry = new THREE.SphereGeometry(105,10,10);
-    var sphereMaterial = new THREE.MeshBasicMaterial({color: 0xff0000,opacity:1});
-    var sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
-    scene.add(sphere);
-
     //add a circle to see the representation area
     var materialC = new THREE.LineBasicMaterial({color: 0x000000});
     var geometryC = new THREE.CircleGeometry(radius,64);
@@ -97,7 +91,7 @@
     //create a random graph or import a graph
     var MAX_CHILDREN_PER_NODE = 4;
     var MIN_CHILDREN_PER_NODE = 2;
-    var DEPTH_LEVEL = 3;
+    var DEPTH_LEVEL = 4;
     var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
     //var hgraph = importGraph("/path/to/graph/");
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
@@ -126,6 +120,7 @@
     function render() {
         stats.update();
         rendererStats.update(renderer);
+        system.geometry.colorsNeedUpdate = true;
         //if (isRunning) //controls rendering process throug variable
         requestAnimationFrame(render);
         renderer.render(scene,camera);
@@ -172,7 +167,6 @@
         }
 
         system = new THREE.PointCloud(geom, material);
-        console.log(system);
         scene.add(system);
 
         function drawChild(hijo,prof,iteration,angle,positionX,positionY){
@@ -254,7 +248,7 @@
     $("#numberOfNodes").append( numberOfNodes.domElement );
 
     //information about interaction with nodes. Align bottom-right
-    document.getElementById('clicked').innerHTML = "No interaction bis jetzt";
+    document.getElementById('clicked').innerHTML = "No interaction until now";
     document.getElementById('clicked').style.position = 'absolute';
     document.getElementById('clicked').style.right = '10px';
     document.getElementById('clicked').style.bottom = '10px';
@@ -290,6 +284,10 @@
         //
     }
 
+    var intersectedNode;
+    var originalColor = new THREE.Color();
+    var mouseOver = false;
+
     //highlighting a node if mouse is over
     function onDocumentMouseMove(event) {
         event.preventDefault();
@@ -300,14 +298,26 @@
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-        var intersects = raycaster.intersectObject(system);        
+        var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
-            //play with intersects[0].index
-            //document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
-            //sphere.position.x= ((event.clientX / window.innerWidth ) * 2 - 1)*4000;
-            //sphere.position.y= (-( event.clientY / window.innerHeight ) * 2 + 1)*4000;
-            //console.log(sphere.position);
-        }
+            if (!mouseOver){
+                console.log("hey, acabo de detectarte")
+                var color = system.geometry.colors[intersects[0].index];
+                originalColor.setRGB(color.r,color.g,color.b);
+                intersectedNode = intersects[0].index;                
+                system.geometry.colors[intersects[0].index].setRGB(1,1,1);
+                mouseOver = true; 
+                document.body.style.cursor = 'pointer';
+            }
+        } else {
+            if (mouseOver){
+                console.log(originalColor);
+                console.log(intersectedNode);
+                system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
+                mouseOver = false;
+                document.body.style.cursor = 'default';
+            }            
+        }           
     }
 
     //proper working when resizing window (apparently not working)
