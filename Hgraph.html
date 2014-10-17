@@ -76,7 +76,7 @@
     //create camera
     var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
     //point the camera to the center (related to DISTANCE)
-    camera.position.z = 20000;
+    camera.position.z = 10000;
     camera.lookAt(scene.position);
 
     //add a circle to see the representation area
@@ -211,9 +211,55 @@
         //console.log("id del nodo a centrar: "+newCenter);
         var newGraph = hgraph;
 
+        //var newDepth = DEPTH_LEVEL;
+        var newDepth = calculateNewDepth(newCenter);
+
+        function calculateNewDepth(novi){
+            //var copyGraph = newGraph;
+            var maximumDepth = 0;
+            for (var i = 0 ; i < newGraph.vertices.length ; i++) {  
+                newGraph.vertices[i].processed=false;
+            }
+            newGraph.vertices[novi].processed=true;
+            var links = linksNoProcessed(novi);
+            for (var i=0 ; i<links.length ; i++){
+                processChild(links[i].id,0);
+            }
+            function processChild(ide,prof){
+                if (prof >= maximumDepth){
+                    maximumDepth = prof;
+                    console.log(maximumDepth);
+                }
+                var id = newGraph.vertices[ide].id;
+                newGraph.vertices[id].processed = true;
+
+                var links = linksNotProcessed(id);
+                for (var i=0 ; i<links.length ; i++){
+                    processChild(links[i].id,prof++);
+                }
+            }
+            function linksNoProcessed(ide){
+                var links = [];
+                for (var i = 0 ; i < newGraph.vertices[ide].linksTo.length ; i++) {
+                    if (! newGraph.vertices[ide].linksTo[i].processed){
+                        links.push(newGraph.vertices[ide].linksTo[i]);
+                    }
+                }
+                for (var i = 0 ; i < newGraph.vertices[ide].linksFrom.length ; i++) {
+                    if (! newGraph.vertices[ide].linksFrom[i].processed){
+                        links.push(newGraph.vertices[ide].linksFrom[i]);
+                    }
+                }
+                return links;
+            }
+            console.log(maximumDepth);
+            return maximumDepth;
+        }
+
         //to modify this DEPTH_LEVEL for a method to find it out in the given graph
-        var distance = radius*0.96 / DEPTH_LEVEL;
-        var maxDeepen = DEPTH_LEVEL;
+        var distance = radius*0.96 / newDepth;
+        var maxDeepen = newDepth;
+
 
         for (var i = 0 ; i < newGraph.vertices.length ; i++) {  
             newGraph.vertices[i].processed = false;
@@ -221,7 +267,7 @@
 
         newGraph.vertices[newCenter].position.x=0;
         newGraph.vertices[newCenter].position.y=0;
-        newGraph.vertices[newCenter].processed = true;
+        newGraph.vertices[newCenter].processed=true;
         
         var links = linksNotProcessed(newCenter);
         
@@ -257,13 +303,16 @@
 
             var position3D = new THREE.Vector3(positionX,positionY,0);
             var positionSon = newGraph.vertices[id].position;
-            //if (prof <= 5)
-              //drawEdge(position3D,positionSon);
 
-            //linesZiel[linesIteration] = position3D;
-            lines[linesIteration].geometry.vertices[0] = position3D;
-            lines[linesIteration].geometry.vertices[1] = positionSon;
-            linesIteration++;
+            updateEdge();
+            function updateEdge(){
+                //if (prof <= 5)
+                  //drawEdge(position3D,positionSon);
+                //linesZiel[linesIteration] = position3D;
+                lines[linesIteration].geometry.vertices[0] = position3D;
+                lines[linesIteration].geometry.vertices[1] = positionSon;
+                linesIteration++;
+            }
 
             //calculate angle corresponding each child
             var links = linksNotProcessed(id);
