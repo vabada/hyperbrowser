@@ -10,6 +10,7 @@
     <script type="text/javascript" src="js/dat.gui.js"></script>
     <script type="text/javascript" src="js/math.js"></script>
     <script type="text/javascript" src="js/tween.min.js"></script>
+    <script type="text/javascript" src="js/OrbitControls.js"></script>
     <style>
         body{
             margin: 0;
@@ -82,6 +83,7 @@
     camera.position.z = 10000;
     camera.lookAt(scene.position);
 
+
     //add a circle to see the representation area
     var materialC = new THREE.LineBasicMaterial({color: 0x000000});
     var geometryC = new THREE.CircleGeometry(radius,64);
@@ -112,8 +114,11 @@
     graphHeigthArea = window.innerHeight;
     renderer.setSize(graphWidthArea, graphHeigthArea);
     renderer.autoUpdateObjects = false;
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    
     //append the renderer to the page
     $("#output").append(renderer.domElement);
+
 
     //we ask for a frame draw
     requestAnimationFrame(render);
@@ -122,6 +127,7 @@
     function render() {
         stats.update();
         TWEEN.update();
+        controls.update();
         rendererStats.update(renderer);
         system.geometry.colorsNeedUpdate = true;
         system.geometry.verticesNeedUpdate = true;
