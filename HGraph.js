@@ -52,7 +52,7 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
   var id = 0;
   var vertex = new Vertex(id);
   graph.vertices.push(vertex);
-  //graph.vertices[id].title="soy el nodo 0"; //to add some properties
+  graph.vertices[id].id=id;
   id++;
 
   //add random number of children to the node
@@ -66,7 +66,7 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
     if (prof>=0){
       var vertix = new Vertex(id);
       graph.addVertex(vertix,parent);
-      //graph.vertices[id].title="soy el nodo "+id;  //to add some properties
+      graph.vertices[id].id=id;
       id++;
       var numiChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
       for (var i=0 ; i<numiChildren ; i++){
