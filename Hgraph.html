@@ -115,7 +115,9 @@
     renderer.setSize(graphWidthArea, graphHeigthArea);
     renderer.autoUpdateObjects = false;
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    
+    controls.noRotate = true;
+    controls.noPan = true;
+
     //append the renderer to the page
     $("#output").append(renderer.domElement);
 
@@ -278,13 +280,18 @@
         newGraph.vertices[newCenter].processed=true;
         
         var links = linksNotProcessed(newCenter);
-        
         //calculate angle corresponding each child
-        //if (newGraph.vertices[newCenter].linksTo.length = 0)
+        //var angle = (2*math.pi)/(links.length);
+        if (newGraph.vertices[newCenter].linksTo.length == 0){
+            var angle = (2*math.pi)/(3);
+            //number where to start      
+            var iter = math.complex({r:1,phi:math.pi});
+        } else {
             var angle = (2*math.pi)/(links.length);
-        
-        //number where to start      
+            //number where to start      
         var iter = math.complex({r:1,phi:-angle/2});
+        }       
+        
         //complex number to multiply to get desired 
         var trans = math.complex({r:1,phi:angle});
 
@@ -356,27 +363,37 @@
         }
     }
 
-        /**console.log(system.geometry.vertices[newCenter]);
-        system.geometry.vertices[0].set(system.geometry.vertices[newCenter].x,
-                                        system.geometry.vertices[newCenter].y,
-                                        system.geometry.vertices[newCenter].z);
-        system.geometry.vertices[newCenter].set(0,0,0);*/
+    //function recalculateGraph
+    //@param p complex transformation
+    function recalculateGraph(p){
 
-    //delete the graph
-    /**function deleteGraph(){
-        scene.traverse (function (object){
-            if (object instanceof THREE.Line){
-                scene.remove(object);
-            }
-            if (object instanceof THREE.Mesh){
-                scene.remove(object);
-            }
-        });
-        var materialC = new THREE.LineBasicMaterial({color: 0x000000});
-        var geometryC = new THREE.CircleGeometry(radius,64);
-        geometryC.vertices.shift(); // Remove center vertex
-        scene.add(new THREE.Line(geometryC,materialC));
-    }*/
+        var newGraph = hgraph;
+        //console.log(p);
+
+        for (var i = 0 ; i<newGraph.vertices.length ; i++){
+            //radius*0.96 / DEPTH_LEVEL
+            //z: complex number to transform
+            var z = math.complex(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y);
+            //apply transformation
+            var updated = transformation(p,z);
+            console.log(updated);
+
+            //update position of every node in the newGraph
+            newGraph.vertices[i].position.x = (updated.re * radius * 0.66);
+            newGraph.vertices[i].position.y = (updated.im * radius * 0.66);
+        }
+        
+        function transformation(p,z){
+            var num = math.add(z,p);
+            var den = math.add(1,math.multiply(math.conj(p),z));
+            var zt = math.divide(num,den);
+            return zt;
+        }
+            //var iter = math.complex({r:1,phi:-angle/2});
+            //iter = math.multiply(iter,trans);
+        return newGraph;
+            
+    }
 
     //information about number of nodes drawn. Align top-right
     document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
@@ -403,7 +420,7 @@
     //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
         event.preventDefault();
-        //check if some node clicked, for displaying information
+        //check if some node clicked, for displaying information and centering
         var projector = new THREE.Projector();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         projector.unprojectVector(vector, camera);
@@ -413,9 +430,11 @@
         var intersects = raycaster.intersectObject(system);        
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
+
             var recalculatedGraph = reDrawGraph(intersects[0].index);
+
             history.push(intersects[0].index);
-            console.log(history);
+            //console.log(history);
 
             //for (var i = 0 ; i < recalculatedGraph.vertices.length ; i++) {
                 //system.geometry.vertices[i] = recalculatedGraph.vertices[i].position;
@@ -423,34 +442,51 @@
         
             hgraph = recalculatedGraph;
 
-            // create a tween
-            // http://sole.github.io/tween.js/examples/03_graphs.html
-            
+            // Create a tween for rendering smoothly the transitions            
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
             tween.easing(TWEEN.Easing.Sinusoidal.InOut);
-
             var onUpdate = function () {
                 var count = 0;
                 var tmp = this.tmp;
-
                 system.geometry.vertices.forEach(function (e) {
                     var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
                     var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
                     system.geometry.vertices[count++].set(newX, newY, e.z);
                 });
-
                 system.sortParticles = true;
             };
-
             tween.onUpdate(onUpdate);
-
             tween.start();
 
-            /*for (var i = 0 ; i<= lines.length ; i++){
+            /*for (var i = 0 ; i< lines.length ; i++){
                 lines[i].geometry.vertices[1] = linesZiel[i];
             }*/
+        } else { //if not, apply the desired transformation
+            var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
+            var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
+            //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
+            var p = math.complex(clickedX,clickedY);
+            var recalculatedGraph = recalculateGraph(p);
+            hgraph = recalculatedGraph;
+            // Create a tween for rendering smoothly the transitions            
+            var posSrc = {tmp: 150}
+            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+            //to choose between transitions
+            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+            var onUpdate = function () {
+                var count = 0;
+                var tmp = this.tmp;
+                system.geometry.vertices.forEach(function (e) {
+                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                    system.geometry.vertices[count++].set(newX, newY, e.z);
+                });
+                system.sortParticles = true;
+            };
+            tween.onUpdate(onUpdate);
+            tween.start();
         }
     }
 
