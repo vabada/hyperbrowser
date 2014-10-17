@@ -48,6 +48,9 @@
     //system of points (particles), what is represented
     var system;
 
+    //history of nodes clicked, to add back/forward functionality
+    var history = [];
+
     //array for manipulating the lines
     var lines = [];
     var linesZiel = [];
@@ -191,6 +194,7 @@
         for (var i = 0 ; i < lines.length ; i++){
             scene.add(lines[i]);
         }
+        history.push(0);
         system = new THREE.PointCloud(geom, material);
         system.name = "system";
         scene.add(system);
@@ -226,16 +230,15 @@
                 processChild(links[i].id,0);
             }
             function processChild(ide,prof){
-                if (prof >= maximumDepth){
+                if (++prof >= maximumDepth){
                     maximumDepth = prof;
-                    console.log(maximumDepth);
                 }
                 var id = newGraph.vertices[ide].id;
                 newGraph.vertices[id].processed = true;
 
                 var links = linksNotProcessed(id);
                 for (var i=0 ; i<links.length ; i++){
-                    processChild(links[i].id,prof++);
+                    processChild(links[i].id,prof);
                 }
             }
             function linksNoProcessed(ide){
@@ -252,7 +255,6 @@
                 }
                 return links;
             }
-            console.log(maximumDepth);
             return maximumDepth;
         }
 
@@ -406,22 +408,18 @@
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
             var recalculatedGraph = reDrawGraph(intersects[0].index);
+            history.push(intersects[0].index);
+            console.log(history);
 
             //for (var i = 0 ; i < recalculatedGraph.vertices.length ; i++) {
                 //system.geometry.vertices[i] = recalculatedGraph.vertices[i].position;
             //}
         
             hgraph = recalculatedGraph;
-            console.log(recalculatedGraph);
-
-            //var posSrc = {pos: system.geometry.vertices[5].x}
-            //var tween = new TWEEN.Tween(posSrc).to({pos: recalculatedGraph.vertices[5].position.x}, 8000);
 
             // create a tween
             // http://sole.github.io/tween.js/examples/03_graphs.html
-            console.log(system.geometry.vertices[5].x);
-            console.log(recalculatedGraph.vertices[5].position.x);
-
+            
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
