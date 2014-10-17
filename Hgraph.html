@@ -9,6 +9,7 @@
     <script type="text/javascript" src='js/threex.rendererstats.js'></script>
     <script type="text/javascript" src="js/dat.gui.js"></script>
     <script type="text/javascript" src="js/math.js"></script>
+    <script type="text/javascript" src="js/tween.min.js"></script>
     <style>
         body{
             margin: 0;
@@ -49,6 +50,7 @@
 
     //array for manipulating the lines
     var lines = [];
+    var linesZiel = [];
 
     //create material for edges
     var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
@@ -116,6 +118,7 @@
     //function render that establishes what's done in every iteration
     function render() {
         stats.update();
+        TWEEN.update();
         rendererStats.update(renderer);
         system.geometry.colorsNeedUpdate = true;
         system.geometry.verticesNeedUpdate = true;
@@ -169,7 +172,7 @@
             //geom.colors.push(particleColor);
        	    var position3D = new THREE.Vector3(positionX,positionY,0);
             //if (prof <= 5)
-       		  drawEdge(position3D,particle);
+       		  drawEdge(particle,position3D);
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -178,7 +181,7 @@
             inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
 	        //complex number to multiply to get desired 
 	        var transform = math.complex({r:1,phi:subangle});       		
-   		    //draw all the linked nodes to this node
+   		    //draw all the linked nodes tproo this node
    			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
 			  		drawChild(hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
 			 		inicio = math.multiply(inicio,transform);
@@ -205,7 +208,7 @@
     //function reDrawGraph
     //@param newCenter id of the node to put in the center
     function reDrawGraph(newCenter){
-        console.log("id del nodo a centrar: "+newCenter);
+        //console.log("id del nodo a centrar: "+newCenter);
         var newGraph = hgraph;
 
         //to modify this DEPTH_LEVEL for a method to find it out in the given graph
@@ -221,12 +224,11 @@
         newGraph.vertices[newCenter].processed = true;
         
         var links = linksNotProcessed(newCenter);
-        for (var i = 0 ; i < links.length ; i++ ){
-            console.log(links[i].id);
-        }
         
         //calculate angle corresponding each child
-        var angle = (2*math.pi)/(links.length);
+        //if (newGraph.vertices[newCenter].linksTo.length = 0)
+            var angle = (2*math.pi)/(links.length);
+        
         //number where to start      
         var iter = math.complex({r:1,phi:-angle/2});
         //complex number to multiply to get desired 
@@ -239,6 +241,8 @@
             updateChild(links[i].id,1,iter,angle,0,0);
             iter = math.multiply(iter,trans);
         }
+
+        return newGraph;
 
         //subfunction for updating recursively every child (linked node)
         function updateChild(hijo,prof,iteration,angle,positionX,positionY){
@@ -255,6 +259,8 @@
             var positionSon = newGraph.vertices[id].position;
             //if (prof <= 5)
               //drawEdge(position3D,positionSon);
+
+            //linesZiel[linesIteration] = position3D;
             lines[linesIteration].geometry.vertices[0] = position3D;
             lines[linesIteration].geometry.vertices[1] = positionSon;
             linesIteration++;
@@ -273,23 +279,7 @@
                 updateChild(links[i].id,prof,inicio,subangle,positionSon.x,positionSon.y);
                 inicio = math.multiply(inicio,transform);
             }
-
-            //draw a line between two positions (expressed in THREE.Vector3)
-            function drawEdge(vertex1, vertex2){
-                var edgesGeometry = new THREE.Geometry();
-                edgesGeometry.vertices.push(vertex1);
-                edgesGeometry.vertices.push(vertex2);
-                edge = new THREE.Line(edgesGeometry,edgesMaterial);
-                edge.name = "line";
-                scene.add(edge);
-            }
         }
-
-        for (var i = 0 ; i < newGraph.vertices.length ; i++) {
-            system.geometry.vertices[i] = newGraph.vertices[i].position;
-        }
-
-        hgraph = newGraph;
 
         //function that gives me an array with the ids of node linked to a node
         //that have not been previously processed (drawn)
@@ -366,11 +356,48 @@
         var intersects = raycaster.intersectObject(system);        
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
-            for (var i = 0; i<scene.children.length;i++){
-                if (scene.children[i] instanceof THREE.Line)
-                    console.log(scene.children[i]);
-            }
-            reDrawGraph(intersects[0].index);
+            var recalculatedGraph = reDrawGraph(intersects[0].index);
+
+            //for (var i = 0 ; i < recalculatedGraph.vertices.length ; i++) {
+                //system.geometry.vertices[i] = recalculatedGraph.vertices[i].position;
+            //}
+        
+            hgraph = recalculatedGraph;
+            console.log(recalculatedGraph);
+
+            //var posSrc = {pos: system.geometry.vertices[5].x}
+            //var tween = new TWEEN.Tween(posSrc).to({pos: recalculatedGraph.vertices[5].position.x}, 8000);
+
+            // create a tween
+            // http://sole.github.io/tween.js/examples/03_graphs.html
+            console.log(system.geometry.vertices[5].x);
+            console.log(recalculatedGraph.vertices[5].position.x);
+
+            var posSrc = {tmp: 150}
+            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+            //to choose between transitions
+            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+
+            var onUpdate = function () {
+                var count = 0;
+                var tmp = this.tmp;
+
+                system.geometry.vertices.forEach(function (e) {
+                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                    system.geometry.vertices[count++].set(newX, newY, e.z);
+                });
+
+                system.sortParticles = true;
+            };
+
+            tween.onUpdate(onUpdate);
+
+            tween.start();
+
+            /*for (var i = 0 ; i<= lines.length ; i++){
+                lines[i].geometry.vertices[1] = linesZiel[i];
+            }*/
         }
     }
 
