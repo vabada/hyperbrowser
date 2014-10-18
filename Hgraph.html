@@ -95,7 +95,7 @@
     //create a random graph or import a graph
     var MAX_CHILDREN_PER_NODE = 3;
     var MIN_CHILDREN_PER_NODE = 2;
-    var DEPTH_LEVEL = 4;
+    var DEPTH_LEVEL = 5;
     var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
     //var hgraph = importGraph("/path/to/graph/");
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
@@ -127,15 +127,20 @@
 
     //function render that establishes what's done in every iteration
     function render() {
+        //for the rendering stats
         stats.update();
-        TWEEN.update();
-        controls.update();
         rendererStats.update(renderer);
+        //for the tweening effects
+        TWEEN.update();
+        //for the controls (zoom)
+        controls.update();
+        //color needs update for mouseover effect
         system.geometry.colorsNeedUpdate = true;
+        //geometry needs update in case of any transformation
         system.geometry.verticesNeedUpdate = true;
+        //lines also need update
         for (var i = 0 ; i < lines.length ; i++){
             lines[i].geometry.verticesNeedUpdate = true;
-
         }
         //if (isRunning) //controls rendering process throug variable
         requestAnimationFrame(render);
@@ -183,7 +188,7 @@
             //geom.colors.push(particleColor);
        	    var position3D = new THREE.Vector3(positionX,positionY,0);
             //if (prof <= 5)
-       		  drawEdge(particle,position3D);
+       		  //drawEdge(particle,position3D);
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -319,7 +324,7 @@
             var position3D = new THREE.Vector3(positionX,positionY,0);
             var positionSon = newGraph.vertices[id].position;
 
-            updateEdge();
+            //updateEdge();
             function updateEdge(){
                 //if (prof <= 5)
                   //drawEdge(position3D,positionSon);
@@ -366,21 +371,32 @@
     //function recalculateGraph
     //@param p complex transformation
     function recalculateGraph(p){
-
-        var newGraph = hgraph;
         //console.log(p);
 
+        var newGraph = hgraph;
+        var scale = radius*0.96;
+        //console.log(scale);
+
         for (var i = 0 ; i<newGraph.vertices.length ; i++){
-            //radius*0.96 / DEPTH_LEVEL
             //z: complex number to transform
             var z = math.complex(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y);
+            z = math.divide(z,scale);
+            //console.log("z del nodo: "+i);
+            //console.log(z);
+            
             //apply transformation
             var updated = transformation(p,z);
-            console.log(updated);
+            //console.log(updated);
 
             //update position of every node in the newGraph
-            newGraph.vertices[i].position.x = (updated.re * radius * 0.66);
-            newGraph.vertices[i].position.y = (updated.im * radius * 0.66);
+            newGraph.vertices[i].position.x = (updated.re * scale);
+            newGraph.vertices[i].position.y = (updated.im * scale);
+
+            //update the lines position
+            if (i < newGraph.vertices.length - 1){
+                //lines[i].geometry.vertices[0] = newGraph.vertices[i].position;
+                //lines[i].geometry.vertices[1] = ;
+            }
         }
         
         function transformation(p,z){
@@ -391,8 +407,7 @@
         }
             //var iter = math.complex({r:1,phi:-angle/2});
             //iter = math.multiply(iter,trans);
-        return newGraph;
-            
+        return newGraph;            
     }
 
     //information about number of nodes drawn. Align top-right
@@ -442,7 +457,7 @@
         
             hgraph = recalculatedGraph;
 
-            // Create a tween for rendering smoothly the transitions            
+            // create a tween for rendering smoothly the transitions            
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
@@ -470,12 +485,13 @@
             var p = math.complex(clickedX,clickedY);
             var recalculatedGraph = recalculateGraph(p);
             hgraph = recalculatedGraph;
-            // Create a tween for rendering smoothly the transitions            
+            // create a tween for rendering smoothly the transitions            
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
             tween.easing(TWEEN.Easing.Sinusoidal.InOut);
             var onUpdate = function () {
+                console.log("hola");
                 var count = 0;
                 var tmp = this.tmp;
                 system.geometry.vertices.forEach(function (e) {
