@@ -431,9 +431,14 @@
     document.addEventListener('resize', onWindowResize, false );
     //add listener for moving mouse
     document.addEventListener('mousemove', onDocumentMouseMove, false );
+    //add listener for mouseclick released
+    //document.addEventListener('mouseup', onDocumentMouseUp, false );
 
     //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
+
+        var self = this;
+
         event.preventDefault();
         //check if some node clicked, for displaying information and centering
         var projector = new THREE.Projector();
@@ -479,6 +484,38 @@
                 lines[i].geometry.vertices[1] = linesZiel[i];
             }*/
         } else { //if not, apply the desired transformation
+            //base for drag and drop functionality (modify the point to call the transformation, based in start and end points of clicking)
+            document.onmousemove = function(e) {
+                var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
+                var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
+                //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
+                var p = math.complex(clickedX,clickedY);
+                var recalculatedGraph = recalculateGraph(p);
+                hgraph = recalculatedGraph;
+                // create a tween for rendering smoothly the transitions            
+                var posSrc = {tmp: 150}
+                var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+                //to choose between transitions
+                tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+                var onUpdate = function () {
+                    console.log("hola");
+                    var count = 0;
+                    var tmp = this.tmp;
+                    system.geometry.vertices.forEach(function (e) {
+                        var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                        var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                        system.geometry.vertices[count++].set(newX, newY, e.z);
+                    });
+                    system.sortParticles = true;
+                };
+                tween.onUpdate(onUpdate);
+                tween.start();
+            }
+            this.onmouseup = function() {
+                //we release the mouse button
+                document.onmousemove = null
+            }
+
             var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
             var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
             //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
@@ -545,7 +582,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize( window.innerWidth, window.innerHeight );
-        //controls.handleResize();
+        controls.handleResize();
     }
   });
 </script>
