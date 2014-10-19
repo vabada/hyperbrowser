@@ -484,12 +484,18 @@
                 lines[i].geometry.vertices[1] = linesZiel[i];
             }*/
         } else { //if not, apply the desired transformation
-            //base for drag and drop functionality (modify the point to call the transformation, based in start and end points of clicking)
+            //This handles the drag and drop functionality
+            var initialPointX = null;
+            var initialPointY = null;
             document.onmousemove = function(e) {
-                var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
-                var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
-                //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
-                var p = math.complex(clickedX,clickedY);
+                if (!initialPointX && !initialPointY){
+                    initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
+                    initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
+                    console.log(initialPointX);
+                }
+                var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
+                var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
+                var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
                 var recalculatedGraph = recalculateGraph(p);
                 hgraph = recalculatedGraph;
                 // create a tween for rendering smoothly the transitions            
@@ -498,7 +504,6 @@
                 //to choose between transitions
                 tween.easing(TWEEN.Easing.Sinusoidal.InOut);
                 var onUpdate = function () {
-                    console.log("hola");
                     var count = 0;
                     var tmp = this.tmp;
                     system.geometry.vertices.forEach(function (e) {
@@ -510,12 +515,14 @@
                 };
                 tween.onUpdate(onUpdate);
                 tween.start();
+                initialPointX = clickedX;
+                initialPointY = clickedY;
             }
             this.onmouseup = function() {
                 //we release the mouse button
                 document.onmousemove = null
             }
-
+            /** //This handles a random click in the graph
             var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
             var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
             //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
@@ -539,7 +546,7 @@
                 system.sortParticles = true;
             };
             tween.onUpdate(onUpdate);
-            tween.start();
+            tween.start();*/
         }
     }
 
