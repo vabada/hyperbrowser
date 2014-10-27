@@ -21,6 +21,13 @@ function Vertex(id){
   this.id = id;
   this.linksTo = [];
   this.linksFrom = [];
+  this.processed = false;
+}
+
+HGraph.prototype.preprocessing = function(){
+  for (var i = 0 ; i < this.vertices.length ; i++) {  
+    this.vertices[i].processed=false;
+  }
 }
 
 //Method to add an Edge to the Graph
