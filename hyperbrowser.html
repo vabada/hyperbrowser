@@ -3,7 +3,7 @@
 <head>
     <title>Scalable Hyperbolic Graph</title>
     <script type="text/javascript" src="hypergraph.js"></script>    
-    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/three.min.js"></script>
     <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
     <script type="text/javascript" src='js/threex.rendererstats.js'></script>
@@ -234,11 +234,10 @@
         function calculateNewDepth(novi){
             //var copyGraph = newGraph;
             var maximumDepth = 0;
-            for (var i = 0 ; i < newGraph.vertices.length ; i++) {  
-                newGraph.vertices[i].processed=false;
-            }
+
+            newGraph.resetProcessed();
             newGraph.vertices[novi].processed=true;
-            var links = linksNoProcessed(novi);
+            var links = newGraph.linksNotProcessed(novi);
             for (var i=0 ; i<links.length ; i++){
                 processChild(links[i].id,0);
             }
@@ -249,25 +248,12 @@
                 var id = newGraph.vertices[ide].id;
                 newGraph.vertices[id].processed = true;
 
-                var links = linksNotProcessed(id);
+                var links = newGraph.linksNotProcessed(id);
                 for (var i=0 ; i<links.length ; i++){
                     processChild(links[i].id,prof);
                 }
             }
-            function linksNoProcessed(ide){
-                var links = [];
-                for (var i = 0 ; i < newGraph.vertices[ide].linksTo.length ; i++) {
-                    if (! newGraph.vertices[ide].linksTo[i].processed){
-                        links.push(newGraph.vertices[ide].linksTo[i]);
-                    }
-                }
-                for (var i = 0 ; i < newGraph.vertices[ide].linksFrom.length ; i++) {
-                    if (! newGraph.vertices[ide].linksFrom[i].processed){
-                        links.push(newGraph.vertices[ide].linksFrom[i]);
-                    }
-                }
-                return links;
-            }
+
             return maximumDepth;
         }
 
@@ -275,16 +261,13 @@
         var distance = radius*0.96 / newDepth;
         var maxDeepen = newDepth;
 
-
-        for (var i = 0 ; i < newGraph.vertices.length ; i++) {  
-            newGraph.vertices[i].processed = false;
-        }
+        newGraph.resetProcessed();
 
         newGraph.vertices[newCenter].position.x=0;
         newGraph.vertices[newCenter].position.y=0;
         newGraph.vertices[newCenter].processed=true;
         
-        var links = linksNotProcessed(newCenter);
+        var links = newGraph.linksNotProcessed(newCenter);
         //calculate angle corresponding each child
         //var angle = (2*math.pi)/(links.length);
         if (newGraph.vertices[newCenter].linksTo.length == 0){
@@ -335,7 +318,7 @@
             }
 
             //calculate angle corresponding each child
-            var links = linksNotProcessed(id);
+            var links = newGraph.linksNotProcessed(id);
             var subangle = (angle)/(links.length);
             //number where to start      
             var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
@@ -352,7 +335,7 @@
 
         //function that gives me an array with the ids of node linked to a node
         //that have not been previously processed (drawn)
-        function linksNotProcessed(id){
+        /*function linksNotProcessed(id){
             var links = [];
             for (var i = 0 ; i < newGraph.vertices[id].linksTo.length ; i++) {
                 if (! newGraph.vertices[id].linksTo[i].processed){
@@ -365,7 +348,7 @@
                 }
             }
             return links;
-        }
+        }*/
     }
 
     //function recalculateGraph
@@ -441,9 +424,8 @@
 
         event.preventDefault();
         //check if some node clicked, for displaying information and centering
-        var projector = new THREE.Projector();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
-        projector.unprojectVector(vector, camera);
+        vector.unproject(camera);
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
@@ -491,7 +473,7 @@
                 if (!initialPointX && !initialPointY){
                     initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
                     initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
-                    console.log(initialPointX);
+                    //console.log(initialPointX);
                 }
                 var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
                 var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
@@ -558,9 +540,8 @@
     function onDocumentMouseMove(event) {
         event.preventDefault();
         //check if some node clicked, for displaying information
-        var projector = new THREE.Projector();
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
-        projector.unprojectVector(vector, camera);
+        vector.unproject(camera);
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
