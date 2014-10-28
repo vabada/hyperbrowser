@@ -96,8 +96,15 @@
     var MAX_CHILDREN_PER_NODE = 3;
     var MIN_CHILDREN_PER_NODE = 2;
     var DEPTH_LEVEL = 5;
-    var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-    //var hgraph = importGraph("/path/to/graph/");
+
+    var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
+    if (r == true) {
+        var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+        //x = "You pressed OK!";
+    } else {
+        var hgraph = importGraph("/path/to/graph/");
+        //x = "You pressed Cancel!";
+    }
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
 
     //draw the desired graph
@@ -188,7 +195,7 @@
             //geom.colors.push(particleColor);
        	    var position3D = new THREE.Vector3(positionX,positionY,0);
             //if (prof <= 5)
-       		  //drawEdge(particle,position3D);
+       		  drawEdge(particle,position3D);
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -222,9 +229,9 @@
     	}
     }
 
-    //function reDrawGraph
+    //function reCenterGraph
     //@param newCenter id of the node to put in the center
-    function reDrawGraph(newCenter){
+    function reCenterGraph(newCenter){
         //console.log("id del nodo a centrar: "+newCenter);
         var newGraph = hgraph;
 
@@ -307,7 +314,7 @@
             var position3D = new THREE.Vector3(positionX,positionY,0);
             var positionSon = newGraph.vertices[id].position;
 
-            //updateEdge();
+            updateEdge();
             function updateEdge(){
                 //if (prof <= 5)
                   //drawEdge(position3D,positionSon);
@@ -351,9 +358,9 @@
         }*/
     }
 
-    //function recalculateGraph
+    //function moveGraph
     //@param p complex transformation
-    function recalculateGraph(p){
+    function moveGraph(p){
         //console.log(p);
 
         var newGraph = hgraph;
@@ -431,9 +438,9 @@
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
         var intersects = raycaster.intersectObject(system);        
         if (intersects.length > 0) {
-            document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index;
+            document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
 
-            var recalculatedGraph = reDrawGraph(intersects[0].index);
+            var recalculatedGraph = reCenterGraph(intersects[0].index);
 
             history.push(intersects[0].index);
             //console.log(history);
@@ -478,7 +485,7 @@
                 var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
                 var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
                 var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
-                var recalculatedGraph = recalculateGraph(p);
+                var recalculatedGraph = moveGraph(p);
                 hgraph = recalculatedGraph;
                 // create a tween for rendering smoothly the transitions            
                 var posSrc = {tmp: 150}
@@ -509,7 +516,7 @@
             var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
             //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
             var p = math.complex(clickedX,clickedY);
-            var recalculatedGraph = recalculateGraph(p);
+            var recalculatedGraph = moveGraph(p);
             hgraph = recalculatedGraph;
             // create a tween for rendering smoothly the transitions            
             var posSrc = {tmp: 150}
@@ -553,7 +560,7 @@
                 intersectedNode = intersects[0].index;                
                 system.geometry.colors[intersects[0].index].setRGB(1,1,1);
                 mouseOver = true;
-                document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index;
+                document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
                 document.body.style.cursor = 'pointer';
             }
         } else {

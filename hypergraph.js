@@ -120,3 +120,42 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
   //console.log("Creating hypergraph with "+graph.vertices+" nodes");  
   return graph;
 }
+
+/* Function that creates a graph from a JSON file
+ *
+ * @param file JSON file with the graph data
+ * @return HGraph graph
+ */
+ function importGraph(file) {
+
+  //load file, put into var loadedGraph
+  //we have insted the JSON directly here TODO load the JSON from file
+  var loadedGraph = '{"phylo":[{"name":"life",  "parent":null},{  "name":"animalia",  "parent":"life"},{  "name":"plantae",  "parent":"life"},{  "name":"fungi",  "parent":"life"},{  "name":"protoctista",  "parent":"life"},{  "name":"monera",  "parent":"life"},{  "name":"vertebrates",  "parent":"animalia"},{  "name":"invertebrates",  "parent":"animalia"},{  "name":"fish",  "parent":"vertebrates"},{  "name":"amphibians",  "parent":"vertebrates"},{  "name":"reptiles",  "parent":"vertebrates"},{  "name":"birds",  "parent":"vertebrates"},{  "name":"mammals",  "parent":"vertebrates"},{  "name":"Glaucophyta",  "parent":"plantae"},{  "name":"Rhodophyta",  "parent":"plantae"},{  "name":"Chlorophyta",  "parent":"Viridiplantae"},{  "name":"Streptophyta",  "parent":"Viridiplantae"},{  "name":"Charophyta",  "parent":"Streptophyta"},{  "name":"Embryophyta",  "parent":"Streptophyta"}]}';
+
+  obj = JSON.parse(loadedGraph);
+
+  //create the HGraph
+  var graph = new HGraph();
+
+  var vertex = new Vertex(0);
+  vertex.name = obj.phylo[0].name;
+  vertex.id = 0
+  //graph.vertices[0].id=0;
+  graph.vertices.push(vertex);
+
+  for (var i = 1; i<obj.phylo.length; i++){
+    var vertex = new Vertex(i);
+    vertex.name = obj.phylo[i].name;
+    vertex.id = i;
+    //graph.vertices[i].id=i;
+
+    for (var j = 0; j<graph.vertices.length; j++){
+      if (graph.vertices[j].name == obj.phylo[i].parent){
+        var parent = graph.vertices[j];
+      }
+    }
+    graph.addVertex(vertex,parent);
+  }
+
+  return graph;
+}

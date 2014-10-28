@@ -1,0 +1,76 @@
+{
+  "name":"life",
+  "parent":null
+}
+{
+  "name":"animalia",
+  "parent":"life"
+}
+{
+  "name":"plantae",
+  "parent":"life"
+}
+{
+  "name":"fungi",
+  "parent":"life"
+}
+{
+  "name":"protoctista",
+  "parent":"life"
+}
+{
+  "name":"monera",
+  "parent":"life"
+}
+{
+  "name":"vertebrates",
+  "parent":"animalia"
+}
+{
+  "name":"invertebrates",
+  "parent":"animalia"
+}
+{
+  "name":"fish",
+  "parent":"vertebrates"
+}
+{
+  "name":"amphibians",
+  "parent":"vertebrates"
+}
+{
+  "name":"reptiles",
+  "parent":"vertebrates"
+}
+{
+  "name":"birds",
+  "parent":"vertebrates"
+}
+{
+  "name":"mammals",
+  "parent":"vertebrates"
+}
+{
+  "name":"Glaucophyta",
+  "parent":"plantae"
+}
+{
+  "name":"Rhodophyta",
+  "parent":"plantae"
+}
+{
+  "name":"Chlorophyta",
+  "parent":"Viridiplantae"
+}
+{
+  "name":"Streptophyta",
+  "parent":"Viridiplantae"
+}
+{
+  "name":"Charophyta",
+  "parent":"Streptophyta"
+}
+{
+  "name":"Embryophyta",
+  "parent":"Streptophyta"
+}
