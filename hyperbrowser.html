@@ -19,13 +19,19 @@
         #content{
             margin: 0;
             overflow:hidden;
-        }         
+        }
+        #swap{
+            position:absolute;
+            right:0px;
+            top:30px;
+        }
     </style>
 </head>
 <body>
 <div id="content">    
     <div id="stats">
     </div>
+    <button id="swap" onclick="swapGraphs()">Swap the graph</button>
     <div id="numberOfNodes">
     </div>
     <div id="output">
@@ -36,6 +42,17 @@
     </div>
 </div>
 <script type="text/javascript">
+    function swapGraphs(){
+        var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
+        if (r == true) {
+            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            //x = "You pressed OK!";
+        } else {
+            hgraph = importGraph("/path/to/graph/");
+            DEPTH_LEVEL = 3;
+            //x = "You pressed Cancel!";
+        }
+    }
   $(function () {
 
     //load the library math.js to ease work with complex numbers
@@ -55,6 +72,7 @@
     //array for manipulating the lines
     var lines = [];
     var linesZiel = [];
+    var spritey;
 
     //create material for edges
     var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
@@ -97,15 +115,8 @@
     var MIN_CHILDREN_PER_NODE = 2;
     var DEPTH_LEVEL = 5;
 
-    var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
-    if (r == true) {
-        var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-        //x = "You pressed OK!";
-    } else {
-        var hgraph = importGraph("/path/to/graph/");
-        DEPTH_LEVEL = 3;
-        //x = "You pressed Cancel!";
-    }
+    var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+    
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
 
     //draw the desired graph
@@ -180,6 +191,10 @@
         	drawChild(0,hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
+        //Labels first try
+        spritey = makeTextSprite( " Node0 ", { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        spritey.position.set(0,0,0);
+        scene.add( spritey );
         //subfunction for drawing recursively every child (linked node)
         function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
@@ -384,8 +399,10 @@
             //update position of every node in the newGraph
             newGraph.vertices[i].position.x = (updated.re * scale);
             newGraph.vertices[i].position.y = (updated.im * scale);
-            console.log("nodo origen: "+lines[0].origin);
-            console.log("nodo destino: "+lines[0].destiny);
+            if (i == 0 ){
+                //console.log(spritey);
+                spritey.position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
+            }
         }
 
         //update the lines position
@@ -403,6 +420,61 @@
             //var iter = math.complex({r:1,phi:-angle/2});
             //iter = math.multiply(iter,trans);
         return newGraph;            
+    }
+
+    //From Stemkoski example: Sprite-Text-Labes.html
+    function makeTextSprite( message, parameters ){
+        if ( parameters === undefined ) parameters = {};
+        
+        var fontface = parameters.hasOwnProperty("fontface") ? 
+            parameters["fontface"] : "Arial";
+        
+        var fontsize = parameters.hasOwnProperty("fontsize") ? 
+            parameters["fontsize"] : 18;
+        
+        var borderThickness = parameters.hasOwnProperty("borderThickness") ? 
+            parameters["borderThickness"] : 4;
+        
+        var borderColor = parameters.hasOwnProperty("borderColor") ?
+            parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+        
+        var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+            parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+        //var spriteAlignment = THREE.SpriteAlignment.topLeft;
+            
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        context.font = "Bold " + fontsize + "px " + fontface;
+        
+        // get size data (height depends only on font size)
+        var metrics = context.measureText( message );
+        var textWidth = metrics.width;
+        
+        // background color
+        context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+                                      + backgroundColor.b + "," + backgroundColor.a + ")";
+        // border color
+        context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+                                      + borderColor.b + "," + borderColor.a + ")";
+        context.lineWidth = borderThickness;
+        //roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+        // 1.4 is extra height factor for text below baseline: g,j,p,q.
+        
+        // text color
+        context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+        context.fillText( message, borderThickness, fontsize + borderThickness);
+        
+        // canvas contents will be used for a texture
+        var texture = new THREE.Texture(canvas) 
+        texture.needsUpdate = true;
+
+        var spriteMaterial = new THREE.SpriteMaterial( 
+            { map: texture, useScreenCoordinates: false} );
+        var sprite = new THREE.Sprite( spriteMaterial );
+        sprite.scale.set(2000,1000,20);
+        return sprite;  
     }
 
     //information about number of nodes drawn. Align top-right
