@@ -103,6 +103,7 @@
         //x = "You pressed OK!";
     } else {
         var hgraph = importGraph("/path/to/graph/");
+        DEPTH_LEVEL = 3;
         //x = "You pressed Cancel!";
     }
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
@@ -176,11 +177,11 @@
         var trans = math.complex({r:1,phi:angle});
         //draw all the linked nodes to the initial node
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
-        	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
+        	drawChild(0,hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
         //subfunction for drawing recursively every child (linked node)
-        function drawChild(hijo,prof,iteration,angle,positionX,positionY){
+        function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
             prof++;
@@ -195,7 +196,7 @@
             //geom.colors.push(particleColor);
        	    var position3D = new THREE.Vector3(positionX,positionY,0);
             //if (prof <= 5)
-       		  drawEdge(particle,position3D);
+       		  drawEdge(particle,position3D,padre,hijo);
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -206,7 +207,7 @@
 	        var transform = math.complex({r:1,phi:subangle});       		
    		    //draw all the linked nodes tproo this node
    			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
-			  		drawChild(hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
+			  		drawChild(id,hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
 			 		inicio = math.multiply(inicio,transform);
     		}
     	}
@@ -220,11 +221,13 @@
         scene.add(system);
 
     	//draw a line between two positions (expressed in THREE.Vector3)
-    	function drawEdge(vertex1, vertex2){
+    	function drawEdge(vertex1, vertex2, origin, destiny){
     		var edgesGeometry = new THREE.Geometry();
             edgesGeometry.vertices.push(vertex1);
             edgesGeometry.vertices.push(vertex2);
             edge = new THREE.Line(edgesGeometry,edgesMaterial);
+            edge.origin = origin;
+            edge.destiny = destiny;
             lines.push(edge);
     	}
     }
@@ -381,12 +384,14 @@
             //update position of every node in the newGraph
             newGraph.vertices[i].position.x = (updated.re * scale);
             newGraph.vertices[i].position.y = (updated.im * scale);
+            console.log("nodo origen: "+lines[0].origin);
+            console.log("nodo destino: "+lines[0].destiny);
+        }
 
-            //update the lines position
-            if (i < newGraph.vertices.length - 1){
-                //lines[i].geometry.vertices[0] = newGraph.vertices[i].position;
-                //lines[i].geometry.vertices[1] = ;
-            }
+        //update the lines position
+        for (var j = 0 ; j < lines.length ; j++){
+            lines[j].geometry.vertices[0] = newGraph.vertices[lines[j].origin].position;
+            lines[j].geometry.vertices[1] = newGraph.vertices[lines[j].destiny].position;
         }
         
         function transformation(p,z){
