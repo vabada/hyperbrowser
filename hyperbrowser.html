@@ -43,17 +43,30 @@
 </div>
 <script type="text/javascript">
     function swapGraphs(){
-        var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
+        console.log("TO DO");
+        /*var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
         if (r == true) {
+            var scene = new THREE.Scene();
+            console.log(scene.children);
+            var system;
+            lines = null;
+            var lines = [];
             hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            //drawGraph();
+            console.log("hola pisha");
             //x = "You pressed OK!";
         } else {
+            system = null;
+            var system;
+            lines = null;
+            var lines = [];
             hgraph = importGraph("/path/to/graph/");
             DEPTH_LEVEL = 3;
+            drawGraph();
             //x = "You pressed Cancel!";
-        }
+        }*/
     }
-  $(function () {
+  //$(function () {
 
     //load the library math.js to ease work with complex numbers
     var math = mathjs();
@@ -71,8 +84,9 @@
 
     //array for manipulating the lines
     var lines = [];
-    var linesZiel = [];
+    //var linesZiel = [];
     var spritey;
+    var labels = [];
 
     //create material for edges
     var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
@@ -101,7 +115,6 @@
     camera.position.z = 10000;
     camera.lookAt(scene.position);
 
-
     //add a circle to see the representation area
     var materialC = new THREE.LineBasicMaterial({color: 0x000000});
     var geometryC = new THREE.CircleGeometry(radius,64);
@@ -116,7 +129,6 @@
     var DEPTH_LEVEL = 5;
 
     var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-    
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
 
     //draw the desired graph
@@ -192,9 +204,10 @@
         	iter = math.multiply(iter,trans);
         }
         //Labels first try
-        spritey = makeTextSprite( " Node0 ", { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-        spritey.position.set(0,0,0);
-        scene.add( spritey );
+        spritey = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        spritey.position.set(0,0,0);        
+        labels.push(spritey);
+        //scene.add( spritey );
         //subfunction for drawing recursively every child (linked node)
         function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
@@ -213,6 +226,11 @@
             //if (prof <= 5)
        		  drawEdge(particle,position3D,padre,hijo);
 
+            //Labels for each node
+            spritey = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+            spritey.position.set(posX,posY,0);        
+            labels.push(spritey);
+
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
 	        //number where to start      
@@ -227,10 +245,13 @@
     		}
     	}
 
+        for (var i = 0 ; i < labels.length ; i++){
+            scene.add(labels[i]);
+        }
         for (var i = 0 ; i < lines.length ; i++){
             scene.add(lines[i]);
         }
-        history.push(0);
+        //history.push(0);
         system = new THREE.PointCloud(geom, material);
         system.name = "system";
         scene.add(system);
@@ -316,6 +337,9 @@
             iter = math.multiply(iter,trans);
         }
 
+        for (var i = 0 ; i<labels.length ; i++){
+            labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
+        }
         return newGraph;
 
         //subfunction for updating recursively every child (linked node)
@@ -357,23 +381,6 @@
                 inicio = math.multiply(inicio,transform);
             }
         }
-
-        //function that gives me an array with the ids of node linked to a node
-        //that have not been previously processed (drawn)
-        /*function linksNotProcessed(id){
-            var links = [];
-            for (var i = 0 ; i < newGraph.vertices[id].linksTo.length ; i++) {
-                if (! newGraph.vertices[id].linksTo[i].processed){
-                    links.push(newGraph.vertices[id].linksTo[i]);
-                }
-            }
-            for (var i = 0 ; i < newGraph.vertices[id].linksFrom.length ; i++) {
-                if (! newGraph.vertices[id].linksFrom[i].processed){
-                    links.push(newGraph.vertices[id].linksFrom[i]);
-                }
-            }
-            return links;
-        }*/
     }
 
     //function moveGraph
@@ -399,10 +406,11 @@
             //update position of every node in the newGraph
             newGraph.vertices[i].position.x = (updated.re * scale);
             newGraph.vertices[i].position.y = (updated.im * scale);
-            if (i == 0 ){
+            /*if (i == 0 ){
                 //console.log(spritey);
                 spritey.position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
-            }
+            }*/
+            labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
         }
 
         //update the lines position
@@ -519,7 +527,7 @@
 
             var recalculatedGraph = reCenterGraph(intersects[0].index);
 
-            history.push(intersects[0].index);
+            //history.push(intersects[0].index);
             //console.log(history);
 
             //for (var i = 0 ; i < recalculatedGraph.vertices.length ; i++) {
@@ -656,7 +664,7 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         controls.handleResize();
     }
-  });
+ // });
 </script>
 </body>
 </html>

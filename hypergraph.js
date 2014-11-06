@@ -90,8 +90,9 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
   //create first vertex and add it to the HGraph
   var id = 0;
   var vertex = new Vertex(id);
+  vertex.id = id;
+  vertex.name = "My name is: "+id;
   graph.vertices.push(vertex);
-  graph.vertices[id].id=id;
   id++;
 
   //add random number of children to the node
@@ -108,8 +109,9 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
   function addChild(parent,depth){
     if (depth>=0){
       var vertex = new Vertex(id);
+      vertex.name = "My name is: "+id;
+      vertex.id = id;
       graph.addVertex(vertex,parent);
-      graph.vertices[id].id=id;
       id++;
       var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
       for (var i=0 ; i<numChildren ; i++){
@@ -126,7 +128,7 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
  * @param file JSON file with the graph data
  * @return HGraph graph
  */
- function importGraph(file) {
+function importGraph(file) {
 
   //TODO load file, put into var loadedGraph
   //we have insted the JSON directly here TODO load the JSON from file
@@ -156,6 +158,5 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
     }
     graph.addVertex(vertex,parent);
   }
-
   return graph;
 }
