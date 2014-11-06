@@ -129,6 +129,7 @@
     var DEPTH_LEVEL = 5;
 
     var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+    //var hgraph = importGraph("/path/to/graph/");
     //console.log("random graph, number of nodes: "+hgraph.vertices.length);
 
     //draw the desired graph
@@ -176,6 +177,13 @@
         //if (isRunning) //controls rendering process throug variable
         requestAnimationFrame(render);
         renderer.render(scene,camera);
+        for (var i = 0 ; i < labels.length ; i++){
+            if ((Math.pow(labels[i].position.x,2) + Math.pow(labels[i].position.y,2)) > 2950000){
+                labels[i].visible = false;
+            } else {
+                labels[i].visible = true;
+            }
+        }
     }
 
     //draw the initial Graph
