@@ -20,10 +20,15 @@
             margin: 0;
             overflow:hidden;
         }
+        #type{
+            position:absolute;
+            right:0px;
+            top:35px;
+        }
         #swap{
             position:absolute;
             right:0px;
-            top:30px;
+            top:80px;
         }
     </style>
 </head>
@@ -31,7 +36,11 @@
 <div id="content">    
     <div id="stats">
     </div>
-    <button id="swap" onclick="swapGraphs()">Swap the graph</button>
+    <form id="type">
+        <input type="radio" name="graf" value="random" checked="checked">Random<br>
+        <input type="radio" name="graf" value="life">Tree of Life
+    </form>
+    <button id="swap"onclick="swapGraphs()">Swap the graph</button>
     <div id="numberOfNodes">
     </div>
     <div id="output">
@@ -43,28 +52,21 @@
 </div>
 <script type="text/javascript">
     function swapGraphs(){
-        console.log("TO DO");
-        /*var r = confirm("Press ok to show a random graph. Cancel to load the kingdom of life");
-        if (r == true) {
-            var scene = new THREE.Scene();
-            console.log(scene.children);
-            var system;
-            lines = null;
-            var lines = [];
-            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-            //drawGraph();
-            console.log("hola pisha");
-            //x = "You pressed OK!";
-        } else {
-            system = null;
-            var system;
-            lines = null;
-            var lines = [];
-            hgraph = importGraph("/path/to/graph/");
-            DEPTH_LEVEL = 3;
-            drawGraph();
-            //x = "You pressed Cancel!";
-        }*/
+        deleteGraph();
+        var type = document.getElementById('type');
+        console.log(type.elements["graf"].value);
+        /*hgraph = null;
+        creatingGraph(type.elements["graf"].value);
+        drawGraph();*/
+    }
+
+    function deleteGraph(){
+        while (scene.children.length > 1){
+            for (var i=0 ; i<scene.children.length ; i++){
+                if (scene.children[i].name != "outside")
+                    scene.remove(scene.children[i]);
+            }
+        }
     }
   //$(function () {
 
@@ -128,35 +130,40 @@
     var DEPTH_LEVEL = 5;
 
     //for development purposes. Choose between random or load the tree of life graph
-    var graphToBeDrawn = "life";
-    if (graphToBeDrawn == "random"){
-        var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-        //console.log("random graph, number of nodes: "+hgraph.vertices.length);
-    } else if (graphToBeDrawn == "life"){
-        var hgraph = importGraph("/path/to/graph/");
-        DEPTH_LEVEL = calculateNewDepth(0);
-        //TODO work as a HGraph prototype function
-        function calculateNewDepth(novi){
-            var maximumDepth = 0;
-            hgraph.resetProcessed();
-            hgraph.vertices[novi].processed=true;
-            var links = hgraph.linksNotProcessed(novi);
-            for (var i=0 ; i<links.length ; i++){
-                processChild(links[i].id,0);
-            }
-            function processChild(ide,prof){
-                if (++prof >= maximumDepth){
-                    maximumDepth = prof;
-                }
-                var id = hgraph.vertices[ide].id;
-                hgraph.vertices[id].processed = true;
+    var graphToBeDrawn = "random";
+    var hgraph;
+    creatingGraph(graphToBeDrawn);
 
-                var links = hgraph.linksNotProcessed(id);
+    function creatingGraph(graphToBeDrawn){
+        if (graphToBeDrawn == "random"){
+            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            //console.log("random graph, number of nodes: "+hgraph.vertices.length);
+        } else if (graphToBeDrawn == "life"){
+            hgraph = importGraph("/path/to/graph/");
+            DEPTH_LEVEL = calculateNewDepth(0);
+            //TODO work as a HGraph prototype function
+            function calculateNewDepth(novi){
+                var maximumDepth = 0;
+                hgraph.resetProcessed();
+                hgraph.vertices[novi].processed=true;
+                var links = hgraph.linksNotProcessed(novi);
                 for (var i=0 ; i<links.length ; i++){
-                    processChild(links[i].id,prof);
+                    processChild(links[i].id,0);
                 }
+                function processChild(ide,prof){
+                    if (++prof >= maximumDepth){
+                        maximumDepth = prof;
+                    }
+                    var id = hgraph.vertices[ide].id;
+                    hgraph.vertices[id].processed = true;
+
+                    var links = hgraph.linksNotProcessed(id);
+                    for (var i=0 ; i<links.length ; i++){
+                        processChild(links[i].id,prof);
+                    }
+                }
+                return maximumDepth;
             }
-            return maximumDepth;
         }
     }
 
@@ -181,7 +188,7 @@
     //we ask for a frame draw
     requestAnimationFrame(render);
 
-    //function render that establishes what's done in every iteration
+    //rendering (what's done in every iteration)
     function render() {
         //for the rendering stats
         stats.update();
@@ -198,7 +205,7 @@
         for (var i = 0 ; i < lines.length ; i++){
             lines[i].geometry.verticesNeedUpdate = true;
         }
-        //if (isRunning) //controls rendering process throug variable
+
         requestAnimationFrame(render);
         renderer.render(scene,camera);
         for (var i = 0 ; i < labels.length ; i++){
