@@ -60,6 +60,36 @@ HGraph.prototype.linksNotProcessed = function(id){
   return links;
 }
 
+/* Function that calculates the new depth (distance from center to furthest path) TODO
+ *
+ * @param novi central node
+ * @return maximumDepth level of depth
+ */
+HGraph.prototype.calculateNewDepth = function(novi){
+  var maximumDepth = 0;
+
+  this.resetProcessed();
+  this.vertices[novi].processed=true;
+  var links = this.linksNotProcessed(novi);
+  for (var i=0 ; i<links.length ; i++){
+    processChild(links[i].id,0);
+  }
+  function processChild(ide,prof){
+    if (++prof >= maximumDepth){
+        maximumDepth = prof;
+    }
+    console.log(this.vertices[ide]);
+    var id = this.vertices[ide].id;
+    this.vertices[id].processed = true;
+
+    var links = this.linksNotProcessed(id);
+    for (var i=0 ; i<links.length ; i++){
+        processChild(links[i].id,prof);
+    }
+  }
+  return maximumDepth;
+}
+
 /* Constructor for Vertices, uniquely identifiable by id
  *
  * @param id identifier of the node

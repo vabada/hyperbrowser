@@ -80,9 +80,7 @@
     var system;
 
     //history of nodes clicked, to add back/forward functionality
-    var history = [];
-    history[0] = 0;
-    console.log(history);
+    var visited = [];
 
     //array for manipulating the lines
     var lines = [];
@@ -129,19 +127,45 @@
     var MIN_CHILDREN_PER_NODE = 2;
     var DEPTH_LEVEL = 5;
 
-    var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-    //var hgraph = importGraph("/path/to/graph/");
-    //console.log("random graph, number of nodes: "+hgraph.vertices.length);
+    //for development purposes. Choose between random or load the tree of life graph
+    var graphToBeDrawn = "life";
+    if (graphToBeDrawn == "random"){
+        var hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+        //console.log("random graph, number of nodes: "+hgraph.vertices.length);
+    } else if (graphToBeDrawn == "life"){
+        var hgraph = importGraph("/path/to/graph/");
+        DEPTH_LEVEL = calculateNewDepth(0);
+        //TODO work as a HGraph prototype function
+        function calculateNewDepth(novi){
+            var maximumDepth = 0;
+            hgraph.resetProcessed();
+            hgraph.vertices[novi].processed=true;
+            var links = hgraph.linksNotProcessed(novi);
+            for (var i=0 ; i<links.length ; i++){
+                processChild(links[i].id,0);
+            }
+            function processChild(ide,prof){
+                if (++prof >= maximumDepth){
+                    maximumDepth = prof;
+                }
+                var id = hgraph.vertices[ide].id;
+                hgraph.vertices[id].processed = true;
+
+                var links = hgraph.linksNotProcessed(id);
+                for (var i=0 ; i<links.length ; i++){
+                    processChild(links[i].id,prof);
+                }
+            }
+            return maximumDepth;
+        }
+    }
 
     //draw the desired graph
     drawGraph();
-    //console.log(scene.children.length);
-    //console.log(scene);
 
     // create a renderer and set the size
     var renderer = new THREE.WebGLRenderer({alpha: true});
     renderer.setClearColor(0xCCCCCC, 1.0);
-    //renderer.setSize(WIDTH,HEIGHT)
     //graphWidthArea = window.innerHeight+window.innerHeight/3;
     graphWidthArea = window.innerWidth;
     graphHeigthArea = window.innerHeight;
@@ -153,7 +177,6 @@
 
     //append the renderer to the page
     $("#output").append(renderer.domElement);
-
 
     //we ask for a frame draw
     requestAnimationFrame(render);
@@ -201,6 +224,12 @@
         var particleColor =  new THREE.Color(Math.random()*0xffffff);
         geom.vertices.push(particle);
         geom.colors.push(particleColor);
+
+        //Set the label name and position
+        label = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        label.position.set(0,0,0);
+        labels.push(label);
+
         //calculate angle corresponding each child
         var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
         //number where to start      
@@ -213,11 +242,6 @@
         	iter = math.multiply(iter,trans);
         }
 
-        //Set the label name and position
-        label = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-        label.position.set(0,0,0);        
-        labels.push(label);
-
         //subfunction for drawing recursively every child (linked node)
         function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
@@ -229,8 +253,8 @@
             var particle = new THREE.Vector3(posX, posY, 0);
             //associate particle position to the graph
             hgraph.vertices[id].position = particle;
-            geom.vertices.push(particle);
-            geom.colors.push(new THREE.Color(Math.random()*0xffffff));
+            geom.vertices[id] = particle;
+            geom.colors[id] = new THREE.Color(Math.random()*0xffffff);
             //geom.colors.push(particleColor);
        	    var position3D = new THREE.Vector3(positionX,positionY,0);
             //if (prof <= 5)
@@ -239,7 +263,7 @@
             //Set the label name and position
             label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
             label.position.set(posX,posY,0);        
-            labels.push(label);
+            labels[id]=label;
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -261,7 +285,7 @@
         for (var i = 0 ; i < lines.length ; i++){
             scene.add(lines[i]);
         }
-        //history.push(0);
+        visited.push(0);
         system = new THREE.PointCloud(geom, material);
         system.name = "system";
         scene.add(system);
@@ -309,7 +333,6 @@
                     processChild(links[i].id,prof);
                 }
             }
-
             return maximumDepth;
         }
 
@@ -531,12 +554,8 @@
 
             var recalculatedGraph = reCenterGraph(intersects[0].index);
 
-            //history.push(intersects[0].index);
-            //console.log(history);
-
-            //for (var i = 0 ; i < recalculatedGraph.vertices.length ; i++) {
-                //system.geometry.vertices[i] = recalculatedGraph.vertices[i].position;
-            //}
+            visited.push(intersects[0].index);
+            //console.log(visited);
         
             hgraph = recalculatedGraph;
 
@@ -652,14 +671,14 @@
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
                 document.body.style.cursor = 'pointer';
                 //TODO+1
-                labels[intersects[0].index-1].visibility = true;
+                labels[intersects[0].index].visibility = true;
             }
         } else {
             if (mouseOver){
                 system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
                 mouseOver = false;
                 document.body.style.cursor = 'default';
-                labels[intersectedNode-1].visibility = false;
+                labels[intersectedNode].visibility = false;
             }            
         }           
     }
