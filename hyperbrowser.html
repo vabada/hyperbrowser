@@ -2,15 +2,15 @@
 <html>
 <head>
     <title>Scalable Hyperbolic Graph</title>
-    <script type="text/javascript" src="hypergraph.js"></script>    
-    <script type="text/javascript" src="js/three.min.js"></script>
     <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
+    <script type="text/javascript" src="js/three.min.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
     <script type="text/javascript" src='js/threex.rendererstats.js'></script>
     <script type="text/javascript" src="js/dat.gui.js"></script>
     <script type="text/javascript" src="js/math.js"></script>
     <script type="text/javascript" src="js/tween.min.js"></script>
     <script type="text/javascript" src="js/OrbitControls.js"></script>
+    <script type="text/javascript" src="hypergraph.js"></script>    
     <style>
         body{
             margin: 0;
@@ -81,11 +81,12 @@
 
     //history of nodes clicked, to add back/forward functionality
     var history = [];
+    history[0] = 0;
+    console.log(history);
 
     //array for manipulating the lines
     var lines = [];
     //var linesZiel = [];
-    var spritey;
     var labels = [];
 
     //create material for edges
@@ -178,10 +179,10 @@
         requestAnimationFrame(render);
         renderer.render(scene,camera);
         for (var i = 0 ; i < labels.length ; i++){
-            if ((Math.pow(labels[i].position.x,2) + Math.pow(labels[i].position.y,2)) > 2950000){
-                labels[i].visible = false;
-            } else {
+            if ((Math.pow(labels[i].position.x,2) + Math.pow(labels[i].position.y,2)) < 2950000 || labels[i].visibility){
                 labels[i].visible = true;
+            } else {
+                labels[i].visible = false;
             }
         }
     }
@@ -211,11 +212,12 @@
         	drawChild(0,hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
         	iter = math.multiply(iter,trans);
         }
-        //Labels first try
-        spritey = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-        spritey.position.set(0,0,0);        
-        labels.push(spritey);
-        //scene.add( spritey );
+
+        //Set the label name and position
+        label = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        label.position.set(0,0,0);        
+        labels.push(label);
+
         //subfunction for drawing recursively every child (linked node)
         function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
         	posX = (distance*prof)*iteration.re;
@@ -234,10 +236,10 @@
             //if (prof <= 5)
        		  drawEdge(particle,position3D,padre,hijo);
 
-            //Labels for each node
-            spritey = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-            spritey.position.set(posX,posY,0);        
-            labels.push(spritey);
+            //Set the label name and position
+            label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+            label.position.set(posX,posY,0);        
+            labels.push(label);
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
@@ -393,8 +395,8 @@
 
     //function moveGraph
     //@param p complex transformation
+    //@return newGraph updated graph
     function moveGraph(p){
-        //console.log(p);
 
         var newGraph = hgraph;
         var scale = radius*0.96;
@@ -404,20 +406,15 @@
             //z: complex number to transform
             var z = math.complex(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y);
             z = math.divide(z,scale);
-            //console.log("z del nodo: "+i);
-            //console.log(z);
-            
+
             //apply transformation
             var updated = transformation(p,z);
-            //console.log(updated);
 
-            //update position of every node in the newGraph
+            //update position of the node in the newGraph
             newGraph.vertices[i].position.x = (updated.re * scale);
             newGraph.vertices[i].position.y = (updated.im * scale);
-            /*if (i == 0 ){
-                //console.log(spritey);
-                spritey.position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
-            }*/
+            
+            //update the position for the labels
             labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
         }
 
@@ -433,12 +430,11 @@
             var zt = math.divide(num,den);
             return zt;
         }
-            //var iter = math.complex({r:1,phi:-angle/2});
-            //iter = math.multiply(iter,trans);
         return newGraph;            
     }
 
     //From Stemkoski example: Sprite-Text-Labes.html
+    // TODO delete not needed stuff and comment things
     function makeTextSprite( message, parameters ){
         if ( parameters === undefined ) parameters = {};
         
@@ -655,12 +651,15 @@
                 mouseOver = true;
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
                 document.body.style.cursor = 'pointer';
+                //TODO+1
+                labels[intersects[0].index-1].visibility = true;
             }
         } else {
             if (mouseOver){
                 system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
                 mouseOver = false;
                 document.body.style.cursor = 'default';
+                labels[intersectedNode-1].visibility = false;
             }            
         }           
     }
