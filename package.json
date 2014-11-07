@@ -1,0 +1,25 @@
+{
+  "name": "hyperbrowser",
+  "version": "0.0.2",
+  "description": "A WebGL hyperbloic graph",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "~4.9.x"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abadabanades/hyperbrowser"
+  },
+  "keywords": [
+    "node",
+    "hyperbrowser",
+    "webgl"
+  ],
+  "license": "MIT"
+}

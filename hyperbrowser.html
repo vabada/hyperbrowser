@@ -119,7 +119,7 @@
     //create a random graph or import a graph
     var MAX_CHILDREN_PER_NODE = 3;
     var MIN_CHILDREN_PER_NODE = 2;
-    var DEPTH_LEVEL = 5;
+    var DEPTH_LEVEL = 6;
 
     //for development purposes. Choose between random or load the tree of life graph
     //var graphToBeDrawn = "random";
@@ -149,7 +149,7 @@
         return query_string;
     } ();
 
-    var graphToBeDrawn = queryString.graph;
+    var graphToBeDrawn = queryString.graph || "random";
     creatingGraph(graphToBeDrawn);
 
     function creatingGraph(graphToBeDrawn){
