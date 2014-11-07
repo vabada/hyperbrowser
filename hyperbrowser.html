@@ -22,13 +22,13 @@
         }
         #type{
             position:absolute;
-            right:0px;
+            right:10px;
             top:35px;
         }
-        #swap{
+        #button{
             position:absolute;
-            right:0px;
-            top:80px;
+            right:5px;
+            top:45px;
         }
     </style>
 </head>
@@ -37,10 +37,10 @@
     <div id="stats">
     </div>
     <form id="type">
-        <input type="radio" name="graf" value="random" checked="checked">Random<br>
-        <input type="radio" name="graf" value="life">Tree of Life
+        <input type="radio" name="graph" value="random" checked="checked">Random<br>
+        <input type="radio" name="graph" value="life">Tree of Life
+        <input id="button" type="submit" value="Swap">
     </form>
-    <button id="swap"onclick="swapGraphs()">Swap the graph</button>
     <div id="numberOfNodes">
     </div>
     <div id="output">
@@ -51,15 +51,8 @@
     </div>
 </div>
 <script type="text/javascript">
-    function swapGraphs(){
-        deleteGraph();
-        var type = document.getElementById('type');
-        console.log(type.elements["graf"].value);
-        /*hgraph = null;
-        creatingGraph(type.elements["graf"].value);
-        drawGraph();*/
-    }
-
+    //Implemented, not in use anymore
+    //Function to delete the scene (except the outer circle)
     function deleteGraph(){
         while (scene.children.length > 1){
             for (var i=0 ; i<scene.children.length ; i++){
@@ -68,7 +61,6 @@
             }
         }
     }
-  //$(function () {
 
     //load the library math.js to ease work with complex numbers
     var math = mathjs();
@@ -130,8 +122,34 @@
     var DEPTH_LEVEL = 5;
 
     //for development purposes. Choose between random or load the tree of life graph
-    var graphToBeDrawn = "random";
+    //var graphToBeDrawn = "random";
     var hgraph;
+
+    //http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+    var queryString = function () {
+      // This function is anonymous, is executed immediately and
+      // the return value is assigned to QueryString!
+      var query_string = {};
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i=0;i<vars.length;i++) {
+        var pair = vars[i].split("=");
+            // If first entry with this name
+        if (typeof query_string[pair[0]] === "undefined") {
+          query_string[pair[0]] = pair[1];
+            // If second entry with this name
+        } else if (typeof query_string[pair[0]] === "string") {
+          var arr = [ query_string[pair[0]], pair[1] ];
+          query_string[pair[0]] = arr;
+            // If third or later entry with this name
+        } else {
+          query_string[pair[0]].push(pair[1]);
+        }
+      }
+        return query_string;
+    } ();
+
+    var graphToBeDrawn = queryString.graph;
     creatingGraph(graphToBeDrawn);
 
     function creatingGraph(graphToBeDrawn){
@@ -697,7 +715,6 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
         controls.handleResize();
     }
- // });
 </script>
 </body>
 </html>
