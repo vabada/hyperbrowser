@@ -28,7 +28,6 @@
         #button{
             position:absolute;
             right:5px;
-            top:45px;
         }
     </style>
 </head>
@@ -38,7 +37,8 @@
     </div>
     <form id="type">
         <input type="radio" name="graph" value="random" checked="checked">Random<br>
-        <input type="radio" name="graph" value="life">Tree of Life
+        <input type="radio" name="graph" value="life">Tree of Life<br>
+        <input type="radio" name="graph" value="languages">Languages of the world<br>
         <input id="button" type="submit" value="Swap">
     </form>
     <div id="numberOfNodes">
@@ -127,8 +127,6 @@
 
     //http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
     var queryString = function () {
-      // This function is anonymous, is executed immediately and
-      // the return value is assigned to QueryString!
       var query_string = {};
       var query = window.location.search.substring(1);
       var vars = query.split("&");
@@ -150,13 +148,14 @@
     } ();
 
     var graphToBeDrawn = queryString.graph || "random";
-    creatingGraph(graphToBeDrawn);
 
-    function creatingGraph(graphToBeDrawn){
-        if (graphToBeDrawn == "random"){
+    switch (graphToBeDrawn){
+        case "random":
             hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
             //console.log("random graph, number of nodes: "+hgraph.vertices.length);
-        } else if (graphToBeDrawn == "life"){
+            break;
+
+        case "life":
             hgraph = importGraph("/path/to/graph/");
             DEPTH_LEVEL = calculateNewDepth(0);
             //TODO work as a HGraph prototype function
@@ -182,7 +181,40 @@
                 }
                 return maximumDepth;
             }
-        }
+            break;
+
+        case "languages":
+            //load the CSV format and really specify path TODO
+            hgraph = importGraph("/path/to/graph/");
+            DEPTH_LEVEL = calculateNewDepth(0);
+            //TODO work as a HGraph prototype function
+            function calculateNewDepth(novi){
+                var maximumDepth = 0;
+                hgraph.resetProcessed();
+                hgraph.vertices[novi].processed=true;
+                var links = hgraph.linksNotProcessed(novi);
+                for (var i=0 ; i<links.length ; i++){
+                    processChild(links[i].id,0);
+                }
+                function processChild(ide,prof){
+                    if (++prof >= maximumDepth){
+                        maximumDepth = prof;
+                    }
+                    var id = hgraph.vertices[ide].id;
+                    hgraph.vertices[id].processed = true;
+
+                    var links = hgraph.linksNotProcessed(id);
+                    for (var i=0 ; i<links.length ; i++){
+                        processChild(links[i].id,prof);
+                    }
+                }
+                return maximumDepth;
+            }
+            break;
+
+        default:
+            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            break;
     }
 
     //draw the desired graph
