@@ -147,6 +147,7 @@
         return query_string;
     } ();
 
+    console.log(queryString.graph);
     var graphToBeDrawn = queryString.graph || "random";
 
     switch (graphToBeDrawn){
@@ -156,7 +157,7 @@
             break;
 
         case "life":
-            hgraph = importGraph("/path/to/graph/");
+            hgraph = importGraph("life");
             DEPTH_LEVEL = calculateNewDepth(0);
             //TODO work as a HGraph prototype function
             function calculateNewDepth(novi){
@@ -185,7 +186,7 @@
 
         case "languages":
             //load the CSV format and really specify path TODO
-            hgraph = importGraph("/path/to/graph/");
+            hgraph = importGraph("languages");
             DEPTH_LEVEL = calculateNewDepth(0);
             //TODO work as a HGraph prototype function
             function calculateNewDepth(novi){

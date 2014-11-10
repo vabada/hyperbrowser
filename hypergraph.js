@@ -1,9 +1,3 @@
-/**
-  @author Daniel Abad
-
-  HGraph Structure G = (V,E)
- */
-
 /*
  * HGraph graph with tree structure
  */
@@ -162,8 +156,17 @@ function importGraph(file) {
 
   //TODO load file, put into var loadedGraph
   //we have insted the JSON directly here TODO load the JSON from file
-  var loadedGraph = '{"phylo":[{"name":"life",  "parent":null},{  "name":"animalia",  "parent":"life"},{  "name":"plantae",  "parent":"life"},{  "name":"fungi",  "parent":"life"},{  "name":"protoctista",  "parent":"life"},{  "name":"monera",  "parent":"life"},{  "name":"vertebrates",  "parent":"animalia"},{  "name":"invertebrates",  "parent":"animalia"},{  "name":"fish",  "parent":"vertebrates"},{  "name":"amphibians",  "parent":"vertebrates"},{  "name":"reptiles",  "parent":"vertebrates"},{  "name":"birds",  "parent":"vertebrates"},{"name":"dragons","parent":"birds"},{  "name":"mammals",  "parent":"vertebrates"},{  "name":"Glaucophyta",  "parent":"plantae"},{  "name":"Rhodophyta",  "parent":"plantae"},{  "name":"Chlorophyta",  "parent":"Viridiplantae"},{  "name":"Streptophyta",  "parent":"Viridiplantae"},{  "name":"Charophyta",  "parent":"Streptophyta"},{  "name":"Embryophyta",  "parent":"Streptophyta"}]}';
-
+  switch (file) {
+    case "life":
+      var loadedGraph = '{"phylo":[{"name":"life",  "parent":null},{  "name":"animalia",  "parent":"life"},{  "name":"plantae",  "parent":"life"},{  "name":"fungi",  "parent":"life"},{  "name":"protoctista",  "parent":"life"},{  "name":"monera",  "parent":"life"},{  "name":"vertebrates",  "parent":"animalia"},{  "name":"invertebrates",  "parent":"animalia"},{  "name":"fish",  "parent":"vertebrates"},{  "name":"amphibians",  "parent":"vertebrates"},{  "name":"reptiles",  "parent":"vertebrates"},{  "name":"birds",  "parent":"vertebrates"},{"name":"dragons","parent":"birds"},{  "name":"mammals",  "parent":"vertebrates"},{  "name":"Glaucophyta",  "parent":"plantae"},{  "name":"Rhodophyta",  "parent":"plantae"},{  "name":"Chlorophyta",  "parent":"Viridiplantae"},{  "name":"Streptophyta",  "parent":"Viridiplantae"},{  "name":"Charophyta",  "parent":"Streptophyta"},{  "name":"Embryophyta",  "parent":"Streptophyta"}]}';
+      break;
+    case "languages":
+      var loadedGraph = '{"phylo":[{"name":"blabla","parent":null},  {"name":"Niger-Congo","parent":"blabla"},  {"name":"Austronesian","parent":"blabla"},  {"name":"Trans–New Guinea","parent":"blabla"},  {"name":"Sino-Tibetan","parent":"blabla"},  {"name":"Indo-European","parent":"blabla"},  {"name":"Afro-Asiatic","parent":"blabla"},  {"name":"Nilo-Saharan","parent":"blabla"},  {"name":"Albanian","parent":"Indo-European"},  {"name":"Armenian","parent":"Indo-European"},  {"name":"Balto-Slavic","parent":"Indo-European"},  {"name":"Celtic","parent":"Indo-European"},  {"name":"Germanic","parent":"Indo-European"},  {"name":"Hellenic","parent":"Indo-European"},  {"name":"Indo-Iranian","parent":"Indo-European"},  {"name":"Romance","parent":"Indo-European"},  {"name":"Ibero-Romance","parent":"Romance"},  {"name":"Spanish","parent":"Ibero-Romance"},  {"name":"Poruguese","parent":"Ibero-Romance"},  {"name":"Occitano-Romance","parent":"Romance"},  {"name":"Gallo-Romance","parent":"Romance"},  {"name":"Italo-Romance","parent":"Romance"},  {"name":"Sardinian","parent":"Romance"},  {"name":"Romanian","parent":"Romance"},  {"name":"Slavic","parent":"Balto-Slavic"},  {"name":"Baltic","parent":"Balto-Slavic"},  {"name":"West-Baltic","parent":"Baltic"},  {"name":"East-Baltic","parent":"Baltic"},  {"name":"Latvian","parent":"East-Baltic"},  {"name":"Lithuanian","parent":"East-Baltic"},  {"name":"South-Slavic","parent":"Slavic"},  {"name":"Western-Slavic","parent":"South-Slavic"},  {"name":"Serbo-Croatian","parent":"Western-Slavic"},  {"name":"Slovene","parent":"Western-Slavic"} ]}';
+      break;
+    default:
+      break;
+  }
+  
   obj = JSON.parse(loadedGraph);
 
   //create the HGraph
