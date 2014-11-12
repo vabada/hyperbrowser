@@ -1,4 +1,4 @@
-hyperBrowser
+  hyperBrowser
 ============
 
 Scalable Hyperbolic Browser for Information Visualization with ThreeJS
@@ -10,7 +10,7 @@ To view it locally simply open hyperbrowser.html
 And to play around check the interactivity:
 
 * Click on a node to redraw the graph with this node in the center
-* Drag and drow anywhere to explore the graph
+* Drag and drop anywhere to explore the graph
 * Swap between graphs in the upper right list
 
 External data visualisation

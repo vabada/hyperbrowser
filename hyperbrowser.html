@@ -11,15 +11,26 @@
     <script type="text/javascript" src="js/tween.min.js"></script>
     <script type="text/javascript" src="js/OrbitControls.js"></script>
     <script type="text/javascript" src="hypergraph.js"></script>
-    <script id="vertexshader" type="x-shader/x-vertex">
+    <!-- Vertex Shader-->
+    <!-- to implement the complex transformations:
+    vec2 c_mult(vec2 a, vec2 b) {
+      return vec2(a.x * b.x - a.y * b.y,
+        (a.x+a.y)*(b.x+b.y) - a.x*b.x - a.y*b.y);
+    } -->
+    <script id="vertexShader" type="x-shader/x-vertex">
       void main(){
-
+        gl_PointSize = 5.0;
+        gl_Position = projectionMatrix *
+                  modelViewMatrix *
+                  vec4(position.x * 1.0,position.y * 1.0,position.z,1.0);
       }
     </script>
-    <script id="fragmentshader" type="x-shader/x-fragment">
+    <!-- Fragment Shader-->
+    <!--<script id="fragmentShader" type="x-shader/x-fragment">
       void main(){
-
-      }
+        //pink from example
+        gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
+      }-->
     </script>
     <style>
         body{
@@ -129,7 +140,7 @@
     //create a random graph or import a graph
     var MAX_CHILDREN_PER_NODE = 3;
     var MIN_CHILDREN_PER_NODE = 2;
-    var DEPTH_LEVEL = 6;
+    var DEPTH_LEVEL = 4;
 
     //for development purposes. Choose between random or load the tree of life graph
     //var graphToBeDrawn = "random";
@@ -286,8 +297,8 @@
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
         var material = new THREE.ShaderMaterial({
-              vertexShader:   $('vertexshader').text(),
-              fragmentShader: $('fragmentshader').text(),
+              vertexShader: document.getElementById( 'vertexShader' ).textContent,
+	            //fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               vertexColors:true
             });
         //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
