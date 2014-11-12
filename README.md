@@ -26,6 +26,6 @@ You can load your own graph, or check the provided examples:
 
 * Random graph
 * Tree of Life
-* Languages of the world (TODO)
+* Languages of the world
 * Countries of the world (TODO)
 * Linux filesystem (TODO)

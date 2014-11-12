@@ -10,7 +10,17 @@
     <script type="text/javascript" src="js/math.js"></script>
     <script type="text/javascript" src="js/tween.min.js"></script>
     <script type="text/javascript" src="js/OrbitControls.js"></script>
-    <script type="text/javascript" src="hypergraph.js"></script>    
+    <script type="text/javascript" src="hypergraph.js"></script>
+    <script id="vertexshader" type="x-shader/x-vertex">
+      void main(){
+
+      }
+    </script>
+    <script id="fragmentshader" type="x-shader/x-fragment">
+      void main(){
+
+      }
+    </script>
     <style>
         body{
             margin: 0;
@@ -32,7 +42,7 @@
     </style>
 </head>
 <body>
-<div id="content">    
+<div id="content">
     <div id="stats">
     </div>
     <form id="type">
@@ -83,7 +93,7 @@
 
     //create material for edges
     var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
-    
+
     //initialise the stats, to check performance-------------------------------
     var stats = new Stats();
     stats.setMode(0); // 0: fps, 1: ms
@@ -272,10 +282,15 @@
     function drawGraph(){
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
     	var distance = radius*0.96 / DEPTH_LEVEL;
-    	var maxDeepen = DEPTH_LEVEL;    	
+    	var maxDeepen = DEPTH_LEVEL;
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
-        var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
+        var material = new THREE.ShaderMaterial({
+              vertexShader:   $('vertexshader').text(),
+              fragmentShader: $('fragmentshader').text(),
+              vertexColors:true
+            });
+        //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
         //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
         hgraph.vertices[0].position = particle;
@@ -290,9 +305,9 @@
 
         //calculate angle corresponding each child
         var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
-        //number where to start      
+        //number where to start
         var iter = math.complex({r:1,phi:-angle/2});
-        //complex number to multiply to get desired 
+        //complex number to multiply to get desired
         var trans = math.complex({r:1,phi:angle});
         //draw all the linked nodes to the initial node
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
@@ -320,16 +335,16 @@
 
             //Set the label name and position
             label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-            label.position.set(posX,posY,0);        
+            label.position.set(posX,posY,0);
             labels[id]=label;
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
-	        //number where to start      
+	        //number where to start
 	        var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
             inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
-	        //complex number to multiply to get desired 
-	        var transform = math.complex({r:1,phi:subangle});       		
+	        //complex number to multiply to get desired
+	        var transform = math.complex({r:1,phi:subangle});
    		    //draw all the linked nodes tproo this node
    			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
 			  		drawChild(id,hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
@@ -403,21 +418,21 @@
         newGraph.vertices[newCenter].position.x=0;
         newGraph.vertices[newCenter].position.y=0;
         newGraph.vertices[newCenter].processed=true;
-        
+
         var links = newGraph.linksNotProcessed(newCenter);
         //calculate angle corresponding each child
         //var angle = (2*math.pi)/(links.length);
         if (newGraph.vertices[newCenter].linksTo.length == 0){
             var angle = (2*math.pi)/(3);
-            //number where to start      
+            //number where to start
             var iter = math.complex({r:1,phi:math.pi});
         } else {
             var angle = (2*math.pi)/(links.length);
-            //number where to start      
+            //number where to start
         var iter = math.complex({r:1,phi:-angle/2});
-        }       
-        
-        //complex number to multiply to get desired 
+        }
+
+        //complex number to multiply to get desired
         var trans = math.complex({r:1,phi:angle});
 
         var linesIteration = 0;
@@ -439,7 +454,7 @@
             posY = (distance*prof)*iteration.im;
             prof++;
             //id of the processing vertex
-            var id = hgraph.vertices[hijo].id;            
+            var id = hgraph.vertices[hijo].id;
             //associate particle position to the graph
             newGraph.vertices[id].position = new THREE.Vector3(posX, posY, 0);
             newGraph.vertices[id].processed = true;
@@ -460,11 +475,11 @@
             //calculate angle corresponding each child
             var links = newGraph.linksNotProcessed(id);
             var subangle = (angle)/(links.length);
-            //number where to start      
+            //number where to start
             var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
             inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
-            //complex number to multiply to get desired 
-            var transform = math.complex({r:1,phi:subangle});               
+            //complex number to multiply to get desired
+            var transform = math.complex({r:1,phi:subangle});
             //draw all the linked nodes to this node
 
             for (var i=0 ; i<links.length ; i++){
@@ -494,7 +509,7 @@
             //update position of the node in the newGraph
             newGraph.vertices[i].position.x = (updated.re * scale);
             newGraph.vertices[i].position.y = (updated.im * scale);
-            
+
             //update the position for the labels
             labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
         }
@@ -504,46 +519,46 @@
             lines[j].geometry.vertices[0] = newGraph.vertices[lines[j].origin].position;
             lines[j].geometry.vertices[1] = newGraph.vertices[lines[j].destiny].position;
         }
-        
+
         function transformation(p,z){
             var num = math.add(z,p);
             var den = math.add(1,math.multiply(math.conj(p),z));
             var zt = math.divide(num,den);
             return zt;
         }
-        return newGraph;            
+        return newGraph;
     }
 
     //From Stemkoski example: Sprite-Text-Labes.html
     // TODO delete not needed stuff and comment things
     function makeTextSprite( message, parameters ){
         if ( parameters === undefined ) parameters = {};
-        
-        var fontface = parameters.hasOwnProperty("fontface") ? 
+
+        var fontface = parameters.hasOwnProperty("fontface") ?
             parameters["fontface"] : "Arial";
-        
-        var fontsize = parameters.hasOwnProperty("fontsize") ? 
+
+        var fontsize = parameters.hasOwnProperty("fontsize") ?
             parameters["fontsize"] : 18;
-        
-        var borderThickness = parameters.hasOwnProperty("borderThickness") ? 
+
+        var borderThickness = parameters.hasOwnProperty("borderThickness") ?
             parameters["borderThickness"] : 4;
-        
+
         var borderColor = parameters.hasOwnProperty("borderColor") ?
             parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
-        
+
         var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
             parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
 
         //var spriteAlignment = THREE.SpriteAlignment.topLeft;
-            
+
         var canvas = document.createElement('canvas');
         var context = canvas.getContext('2d');
         context.font = "Bold " + fontsize + "px " + fontface;
-        
+
         // get size data (height depends only on font size)
         var metrics = context.measureText( message );
         var textWidth = metrics.width;
-        
+
         // background color
         context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
                                       + backgroundColor.b + "," + backgroundColor.a + ")";
@@ -553,21 +568,21 @@
         context.lineWidth = borderThickness;
         //roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
         // 1.4 is extra height factor for text below baseline: g,j,p,q.
-        
+
         // text color
         context.fillStyle = "rgba(0, 0, 0, 1.0)";
 
         context.fillText( message, borderThickness, fontsize + borderThickness);
-        
+
         // canvas contents will be used for a texture
-        var texture = new THREE.Texture(canvas) 
+        var texture = new THREE.Texture(canvas)
         texture.needsUpdate = true;
 
-        var spriteMaterial = new THREE.SpriteMaterial( 
+        var spriteMaterial = new THREE.SpriteMaterial(
             { map: texture, useScreenCoordinates: false} );
         var sprite = new THREE.Sprite( spriteMaterial );
         sprite.scale.set(2000,1000,20);
-        return sprite;  
+        return sprite;
     }
 
     //information about number of nodes drawn. Align top-right
@@ -606,7 +621,7 @@
         var raycaster = new THREE.Raycaster();
         raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-        var intersects = raycaster.intersectObject(system);        
+        var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
 
@@ -614,10 +629,10 @@
 
             visited.push(intersects[0].index);
             //console.log(visited);
-        
+
             hgraph = recalculatedGraph;
 
-            // create a tween for rendering smoothly the transitions            
+            // create a tween for rendering smoothly the transitions
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
@@ -653,7 +668,7 @@
                 var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
                 var recalculatedGraph = moveGraph(p);
                 hgraph = recalculatedGraph;
-                // create a tween for rendering smoothly the transitions            
+                // create a tween for rendering smoothly the transitions
                 var posSrc = {tmp: 150}
                 var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
                 //to choose between transitions
@@ -684,7 +699,7 @@
             var p = math.complex(clickedX,clickedY);
             var recalculatedGraph = moveGraph(p);
             hgraph = recalculatedGraph;
-            // create a tween for rendering smoothly the transitions            
+            // create a tween for rendering smoothly the transitions
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
             //to choose between transitions
@@ -723,7 +738,7 @@
             if (!mouseOver){
                 var color = system.geometry.colors[intersects[0].index];
                 originalColor.setRGB(color.r,color.g,color.b);
-                intersectedNode = intersects[0].index;                
+                intersectedNode = intersects[0].index;
                 system.geometry.colors[intersects[0].index].setRGB(1,1,1);
                 mouseOver = true;
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
@@ -737,8 +752,8 @@
                 mouseOver = false;
                 document.body.style.cursor = 'default';
                 labels[intersectedNode].visibility = false;
-            }            
-        }           
+            }
+        }
     }
 
     //proper working when resizing window (apparently not working)
