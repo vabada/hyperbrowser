@@ -172,11 +172,12 @@
 
     //console.log(queryString.graph);
     var graphToBeDrawn = queryString.graph || "random";
+    var randomDepth = (((queryString.depth>12)||(queryString.depth<1)) ? 4 : queryString.depth) || 4;
 
     switch (graphToBeDrawn){
         case "random":
+            DEPTH_LEVEL = randomDepth;
             hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
-            //console.log("random graph, number of nodes: "+hgraph.vertices.length);
             break;
 
         case "life":
@@ -235,13 +236,13 @@
 
         requestAnimationFrame(render);
         renderer.render(scene,camera);
-        for (var i = 0 ; i < labels.length ; i++){
+        /*for (var i = 0 ; i < labels.length ; i++){
             if ((Math.pow(labels[i].position.x,2) + Math.pow(labels[i].position.y,2)) < 2950000 || labels[i].visibility){
                 labels[i].visible = true;
             } else {
                 labels[i].visible = false;
             }
-        }
+        }*/
     }
 
     //draw the initial Graph
@@ -267,7 +268,7 @@
         //Set the label name and position
         label = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
         label.position.set(0,0,0);
-        labels.push(label);
+        //labels.push(label);
 
         //calculate angle corresponding each child
         var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
@@ -301,7 +302,7 @@
           //Set the label name and position
           label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
           label.position.set(posX,posY,0);
-          labels[id]=label;
+          //labels[id]=label;
 
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[son].linksTo.length);
@@ -317,9 +318,9 @@
     		  }
     	  }
 
-        for (var i = 0 ; i < labels.length ; i++){
+        /*for (var i = 0 ; i < labels.length ; i++){
             scene.add(labels[i]);
-        }
+        }*/
 
         visited.push(0);
 
@@ -370,9 +371,9 @@
             iter = math.multiply(iter,trans);
         }
 
-        for (var i = 0 ; i<labels.length ; i++){
+        /*for (var i = 0 ; i<labels.length ; i++){
             labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
-        }
+        }*/
         return newGraph;
 
         //subfunction for updating recursively every child (linked node)
@@ -428,7 +429,7 @@
             newGraph.vertices[i].position.y = (updated.im * scale);
 
             //update the position for the labels
-            labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
+            //labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
         }
 
         function transformation(p,z){
@@ -626,14 +627,14 @@
                 mouseOver = true;
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
                 document.body.style.cursor = 'pointer';
-                labels[intersects[0].index].visibility = true;
+                //labels[intersects[0].index].visibility = true;
             }
         } else {
             if (mouseOver){
                 system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
                 mouseOver = false;
                 document.body.style.cursor = 'default';
-                labels[intersectedNode].visibility = false;
+                //labels[intersectedNode].visibility = false;
             }
         }
     }
