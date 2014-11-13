@@ -16,6 +16,8 @@
     vec2 c_mult(vec2 a, vec2 b) {
       return vec2(a.x * b.x - a.y * b.y,
         (a.x+a.y)*(b.x+b.y) - a.x*b.x - a.y*b.y);
+        to implement the rounded shape (cool):
+        glEnable( GL_POINT_SMOOTH );
     } -->
     <script id="vertexShader" type="x-shader/x-vertex">
       void main(){
@@ -97,13 +99,13 @@
     //history of nodes clicked, to add back/forward functionality
     var visited = [];
 
-    //array for manipulating the lines
-    var lines = [];
-    //var linesZiel = [];
+    //labels, also room for improvement here TODO
     var labels = [];
 
-    //create material for edges
-    var edgesMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
+    //initialise geometry and material for edges
+    var edges;
+    var edgeGeometry = new THREE.Geometry()
+    var edgeMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
 
     //initialise the stats, to check performance-------------------------------
     var stats = new Stats();
@@ -142,11 +144,11 @@
     var MIN_CHILDREN_PER_NODE = 2;
     var DEPTH_LEVEL = 4;
 
-    //for development purposes. Choose between random or load the tree of life graph
-    //var graphToBeDrawn = "random";
+    //hgraph is the graph in every moment
     var hgraph;
 
     //http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+    //getting the type of graph from URL parameter
     var queryString = function () {
       var query_string = {};
       var query = window.location.search.substring(1);
@@ -168,7 +170,7 @@
         return query_string;
     } ();
 
-    console.log(queryString.graph);
+    //console.log(queryString.graph);
     var graphToBeDrawn = queryString.graph || "random";
 
     switch (graphToBeDrawn){
@@ -178,60 +180,15 @@
             break;
 
         case "life":
+            //load the CSV format and really specify path TODO
             hgraph = importGraph("life");
-            DEPTH_LEVEL = calculateNewDepth(0);
-            //TODO work as a HGraph prototype function
-            function calculateNewDepth(novi){
-                var maximumDepth = 0;
-                hgraph.resetProcessed();
-                hgraph.vertices[novi].processed=true;
-                var links = hgraph.linksNotProcessed(novi);
-                for (var i=0 ; i<links.length ; i++){
-                    processChild(links[i].id,0);
-                }
-                function processChild(ide,prof){
-                    if (++prof >= maximumDepth){
-                        maximumDepth = prof;
-                    }
-                    var id = hgraph.vertices[ide].id;
-                    hgraph.vertices[id].processed = true;
-
-                    var links = hgraph.linksNotProcessed(id);
-                    for (var i=0 ; i<links.length ; i++){
-                        processChild(links[i].id,prof);
-                    }
-                }
-                return maximumDepth;
-            }
+            DEPTH_LEVEL = hgraph.calculateNewDepth(0);
             break;
 
         case "languages":
             //load the CSV format and really specify path TODO
             hgraph = importGraph("languages");
-            DEPTH_LEVEL = calculateNewDepth(0);
-            //TODO work as a HGraph prototype function
-            function calculateNewDepth(novi){
-                var maximumDepth = 0;
-                hgraph.resetProcessed();
-                hgraph.vertices[novi].processed=true;
-                var links = hgraph.linksNotProcessed(novi);
-                for (var i=0 ; i<links.length ; i++){
-                    processChild(links[i].id,0);
-                }
-                function processChild(ide,prof){
-                    if (++prof >= maximumDepth){
-                        maximumDepth = prof;
-                    }
-                    var id = hgraph.vertices[ide].id;
-                    hgraph.vertices[id].processed = true;
-
-                    var links = hgraph.linksNotProcessed(id);
-                    for (var i=0 ; i<links.length ; i++){
-                        processChild(links[i].id,prof);
-                    }
-                }
-                return maximumDepth;
-            }
+            DEPTH_LEVEL = hgraph.calculateNewDepth(0);
             break;
 
         default:
@@ -273,10 +230,8 @@
         system.geometry.colorsNeedUpdate = true;
         //geometry needs update in case of any transformation
         system.geometry.verticesNeedUpdate = true;
-        //lines also need update
-        for (var i = 0 ; i < lines.length ; i++){
-            lines[i].geometry.verticesNeedUpdate = true;
-        }
+        //edges also need update
+        edges.geometry.verticesNeedUpdate = true;
 
         requestAnimationFrame(render);
         renderer.render(scene,camera);
@@ -296,12 +251,12 @@
     	var maxDeepen = DEPTH_LEVEL;
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
-        var material = new THREE.ShaderMaterial({
+        /*var material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
 	            //fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               vertexColors:true
-            });
-        //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
+            });*/
+        var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
         //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
         hgraph.vertices[0].position = particle;
@@ -322,103 +277,66 @@
         var trans = math.complex({r:1,phi:angle});
         //draw all the linked nodes to the initial node
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
-        	drawChild(0,hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle.x,particle.y);
+        	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle);
         	iter = math.multiply(iter,trans);
         }
 
         //subfunction for drawing recursively every child (linked node)
-        function drawChild(padre,hijo,prof,iteration,angle,positionX,positionY){
+        function drawChild(son,prof,iteration,angle,particleFather){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
-            prof++;
-    	   	//id of the processing vertex
-			var id = hgraph.vertices[hijo].id;
-            //create the particle in the desired position
-            var particle = new THREE.Vector3(posX, posY, 0);
-            //associate particle position to the graph
-            hgraph.vertices[id].position = particle;
-            geom.vertices[id] = particle;
-            geom.colors[id] = new THREE.Color(Math.random()*0xffffff);
-            //geom.colors.push(particleColor);
-       	    var position3D = new THREE.Vector3(positionX,positionY,0);
-            //if (prof <= 5)
-       		  drawEdge(particle,position3D,padre,hijo);
+          prof++;
+  	   	  //id of the processing vertex
+		      var id = hgraph.vertices[son].id;
+          //create the particle in the desired position
+          var particle = new THREE.Vector3(posX, posY, 0);
+          //associate particle position to the graph
+          hgraph.vertices[id].position = particle;
+          geom.vertices[id] = particle;
+          geom.colors[id] = new THREE.Color(Math.random()*0xffffff);
 
-            //Set the label name and position
-            label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
-            label.position.set(posX,posY,0);
-            labels[id]=label;
+     		  edgeGeometry.vertices.push(particle);
+          edgeGeometry.vertices.push(particleFather);
+
+          //Set the label name and position
+          label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+          label.position.set(posX,posY,0);
+          labels[id]=label;
 
        		//calculate angle corethrsponding each child
-	        var subangle = (angle)/(hgraph.vertices[hijo].linksTo.length);
+	        var subangle = (angle)/(hgraph.vertices[son].linksTo.length);
 	        //number where to start
-	        var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
-            inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
+	        var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+            start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
 	        //complex number to multiply to get desired
 	        var transform = math.complex({r:1,phi:subangle});
    		    //draw all the linked nodes tproo this node
-   			for (var i=0 ; i<hgraph.vertices[hijo].linksTo.length ; i++){
-			  		drawChild(id,hgraph.vertices[hijo].linksTo[i].id,prof,inicio,subangle,particle.x,particle.y);
-			 		inicio = math.multiply(inicio,transform);
-    		}
-    	}
+   			  for (var i=0 ; i<hgraph.vertices[son].linksTo.length ; i++){
+			  		drawChild(hgraph.vertices[son].linksTo[i].id,prof,start,subangle,particle);
+			 		  start = math.multiply(start,transform);
+    		  }
+    	  }
 
         for (var i = 0 ; i < labels.length ; i++){
             scene.add(labels[i]);
         }
-        for (var i = 0 ; i < lines.length ; i++){
-            scene.add(lines[i]);
-        }
-        visited.push(0);
-        system = new THREE.PointCloud(geom, material);
-        system.name = "system";
-        scene.add(system);
 
-    	//draw a line between two positions (expressed in THREE.Vector3)
-    	function drawEdge(vertex1, vertex2, origin, destiny){
-    		var edgesGeometry = new THREE.Geometry();
-            edgesGeometry.vertices.push(vertex1);
-            edgesGeometry.vertices.push(vertex2);
-            edge = new THREE.Line(edgesGeometry,edgesMaterial);
-            edge.origin = origin;
-            edge.destiny = destiny;
-            lines.push(edge);
-    	}
+        visited.push(0);
+
+        edges = new THREE.Line(edgeGeometry, edgeMaterial, THREE.LinePieces);
+        edges.name = "edges";
+        scene.add(edges);
+
+        system = new THREE.PointCloud(geom, material);
+        system.name = "nodes";
+        scene.add(system);
     }
 
     //function reCenterGraph
     //@param newCenter id of the node to put in the center
     function reCenterGraph(newCenter){
-        //console.log("id del nodo a centrar: "+newCenter);
         var newGraph = hgraph;
-
-        //var newDepth = DEPTH_LEVEL;
-        var newDepth = calculateNewDepth(newCenter);
-
-        function calculateNewDepth(novi){
-            //var copyGraph = newGraph;
-            var maximumDepth = 0;
-
-            newGraph.resetProcessed();
-            newGraph.vertices[novi].processed=true;
-            var links = newGraph.linksNotProcessed(novi);
-            for (var i=0 ; i<links.length ; i++){
-                processChild(links[i].id,0);
-            }
-            function processChild(ide,prof){
-                if (++prof >= maximumDepth){
-                    maximumDepth = prof;
-                }
-                var id = newGraph.vertices[ide].id;
-                newGraph.vertices[id].processed = true;
-
-                var links = newGraph.linksNotProcessed(id);
-                for (var i=0 ; i<links.length ; i++){
-                    processChild(links[i].id,prof);
-                }
-            }
-            return maximumDepth;
-        }
+        var newDepth = newGraph.calculateNewDepth(newCenter);
 
         //to modify this DEPTH_LEVEL for a method to find it out in the given graph
         var distance = radius*0.96 / newDepth;
@@ -446,8 +364,6 @@
         //complex number to multiply to get desired
         var trans = math.complex({r:1,phi:angle});
 
-        var linesIteration = 0;
-
         //draw all the linked nodes to the initial node
         for (var i=0 ; i<links.length ; i++){
             updateChild(links[i].id,1,iter,angle,0,0);
@@ -460,12 +376,12 @@
         return newGraph;
 
         //subfunction for updating recursively every child (linked node)
-        function updateChild(hijo,prof,iteration,angle,positionX,positionY){
+        function updateChild(son,prof,iteration,angle,positionX,positionY){
             posX = (distance*prof)*iteration.re;
             posY = (distance*prof)*iteration.im;
             prof++;
             //id of the processing vertex
-            var id = hgraph.vertices[hijo].id;
+            var id = hgraph.vertices[son].id;
             //associate particle position to the graph
             newGraph.vertices[id].position = new THREE.Vector3(posX, posY, 0);
             newGraph.vertices[id].processed = true;
@@ -473,29 +389,19 @@
             var position3D = new THREE.Vector3(positionX,positionY,0);
             var positionSon = newGraph.vertices[id].position;
 
-            updateEdge();
-            function updateEdge(){
-                //if (prof <= 5)
-                  //drawEdge(position3D,positionSon);
-                //linesZiel[linesIteration] = position3D;
-                lines[linesIteration].geometry.vertices[0] = position3D;
-                lines[linesIteration].geometry.vertices[1] = positionSon;
-                linesIteration++;
-            }
-
             //calculate angle corresponding each child
             var links = newGraph.linksNotProcessed(id);
             var subangle = (angle)/(links.length);
             //number where to start
-            var inicio = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
-            inicio = math.multiply(inicio,math.complex({r:1,phi:subangle/2}));
+            var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+            start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
             //complex number to multiply to get desired
             var transform = math.complex({r:1,phi:subangle});
             //draw all the linked nodes to this node
 
             for (var i=0 ; i<links.length ; i++){
-                updateChild(links[i].id,prof,inicio,subangle,positionSon.x,positionSon.y);
-                inicio = math.multiply(inicio,transform);
+                updateChild(links[i].id,prof,start,subangle,positionSon.x,positionSon.y);
+                start = math.multiply(start,transform);
             }
         }
     }
@@ -523,12 +429,6 @@
 
             //update the position for the labels
             labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
-        }
-
-        //update the lines position
-        for (var j = 0 ; j < lines.length ; j++){
-            lines[j].geometry.vertices[0] = newGraph.vertices[lines[j].origin].position;
-            lines[j].geometry.vertices[1] = newGraph.vertices[lines[j].destiny].position;
         }
 
         function transformation(p,z){
@@ -620,6 +520,10 @@
     //add listener for mouseclick released
     //document.addEventListener('mouseup', onDocumentMouseUp, false );
 
+    //variables used by all events:
+    var raycaster = new THREE.Raycaster();
+    raycaster.params.PointCloud.threshold = 90;
+
     //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
 
@@ -629,8 +533,6 @@
         //check if some node clicked, for displaying information and centering
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         vector.unproject(camera);
-        var raycaster = new THREE.Raycaster();
-        raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
         var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
@@ -661,9 +563,6 @@
             tween.onUpdate(onUpdate);
             tween.start();
 
-            /*for (var i = 0 ; i< lines.length ; i++){
-                lines[i].geometry.vertices[1] = linesZiel[i];
-            }*/
         } else { //if not, apply the desired transformation
             //This handles the drag and drop functionality
             var initialPointX = null;
@@ -701,33 +600,8 @@
             }
             this.onmouseup = function() {
                 //we release the mouse button
-                document.onmousemove = null
+                document.onmousemove = null;
             }
-            /** //This handles a random click in the graph
-            var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
-            var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
-            //console.log("Pulsaste: (x="+clickedX+",y="+clickedY+")");
-            var p = math.complex(clickedX,clickedY);
-            var recalculatedGraph = moveGraph(p);
-            hgraph = recalculatedGraph;
-            // create a tween for rendering smoothly the transitions
-            var posSrc = {tmp: 150}
-            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
-            //to choose between transitions
-            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
-            var onUpdate = function () {
-                console.log("hola");
-                var count = 0;
-                var tmp = this.tmp;
-                system.geometry.vertices.forEach(function (e) {
-                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
-                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
-                    system.geometry.vertices[count++].set(newX, newY, e.z);
-                });
-                system.sortParticles = true;
-            };
-            tween.onUpdate(onUpdate);
-            tween.start();*/
         }
     }
 
@@ -741,8 +615,6 @@
         //check if some node clicked, for displaying information
         var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         vector.unproject(camera);
-        var raycaster = new THREE.Raycaster();
-        raycaster.params.PointCloud.threshold = 90;
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
         var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
@@ -754,7 +626,6 @@
                 mouseOver = true;
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
                 document.body.style.cursor = 'pointer';
-                //TODO+1
                 labels[intersects[0].index].visibility = true;
             }
         } else {

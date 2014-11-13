@@ -20,7 +20,7 @@ HGraph.prototype.addVertex = function(son,parent){
  * Function that sets the property processed to false for every vertex
  */
 HGraph.prototype.resetProcessed = function(){
-  for (var i = 0 ; i < this.vertices.length ; i++) {  
+  for (var i = 0 ; i < this.vertices.length ; i++) {
     this.vertices[i].processed=false;
   }
 }
@@ -56,27 +56,27 @@ HGraph.prototype.linksNotProcessed = function(id){
 
 /* Function that calculates the new depth (distance from center to furthest path) TODO
  *
- * @param novi central node
+ * @param newCenter central node
  * @return maximumDepth level of depth
  */
-HGraph.prototype.calculateNewDepth = function(novi){
+HGraph.prototype.calculateNewDepth = function(newCenter){
   var maximumDepth = 0;
+  var that = this;
 
-  this.resetProcessed();
-  this.vertices[novi].processed=true;
-  var links = this.linksNotProcessed(novi);
+  that.resetProcessed();
+  that.vertices[newCenter].processed=true;
+  var links = that.linksNotProcessed(newCenter);
   for (var i=0 ; i<links.length ; i++){
     processChild(links[i].id,0);
   }
-  function processChild(ide,prof){
+  function processChild(childId ,prof){
     if (++prof >= maximumDepth){
         maximumDepth = prof;
     }
-    console.log(this.vertices[ide]);
-    var id = this.vertices[ide].id;
-    this.vertices[id].processed = true;
+    var id = that.vertices[childId].id;
+    that.vertices[id].processed = true;
 
-    var links = this.linksNotProcessed(id);
+    var links = that.linksNotProcessed(id);
     for (var i=0 ; i<links.length ; i++){
         processChild(links[i].id,prof);
     }
@@ -139,11 +139,11 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
       id++;
       var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
       for (var i=0 ; i<numChildren ; i++){
-        addChild(vertex,depth-1);                    
+        addChild(vertex,depth-1);
       }
     }
   }
-  //console.log("Creating hypergraph with "+graph.vertices+" nodes");  
+  //console.log("Creating hypergraph with "+graph.vertices+" nodes");
   return graph;
 }
 
@@ -166,7 +166,7 @@ function importGraph(file) {
     default:
       break;
   }
-  
+
   obj = JSON.parse(loadedGraph);
 
   //create the HGraph
