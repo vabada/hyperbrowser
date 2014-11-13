@@ -28,11 +28,17 @@
       }
     </script>
     <!-- Fragment Shader-->
-    <!--<script id="fragmentShader" type="x-shader/x-fragment">
+    <script id="fragmentShader" type="x-shader/x-fragment">
       void main(){
+
+        /*vec2 pos = mod(gl_FragCoord.xy, vec2(50.0)) - vec2(25.0);
+        float dist_squared = dot(pos, pos);
+
+        gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
+
         //pink from example
         gl_FragColor = vec4(1.0, 0.0, 1.0, 1.0);
-      }-->
+      }
     </script>
     <style>
         body{
@@ -252,12 +258,12 @@
     	var maxDeepen = DEPTH_LEVEL;
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
-        /*var material = new THREE.ShaderMaterial({
+        var material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
-	            //fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               vertexColors:true
-            });*/
-        var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
+            });
+        //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
         //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
         hgraph.vertices[0].position = particle;
@@ -539,13 +545,37 @@
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
 
-            var recalculatedGraph = reCenterGraph(intersects[0].index);
+            var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
+            var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
+
+            /*// RECENTRES THE GRAPH APPLYING TRANSFORMATION
+            var p = math.complex(-clickedX,-clickedY);
+            var recalculatedGraph = moveGraph(p);
+            hgraph = recalculatedGraph;
+            // create a tween for rendering smoothly the transitions
+            var posSrc = {tmp: 150}
+            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+            //to choose between transitions
+            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+            var onUpdate = function () {
+                var count = 0;
+                var tmp = this.tmp;
+                system.geometry.vertices.forEach(function (e) {
+                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                    system.geometry.vertices[count++].set(newX, newY, e.z);
+                });
+                system.sortParticles = true;
+            };
+            tween.onUpdate(onUpdate);
+            tween.start();*/
 
             visited.push(intersects[0].index);
             //console.log(visited);
 
+            // RECENTRES THE GRAPH WITH NEW ALGORITHM
+            var recalculatedGraph = reCenterGraph(intersects[0].index);
             hgraph = recalculatedGraph;
-
             // create a tween for rendering smoothly the transitions
             var posSrc = {tmp: 150}
             var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
@@ -572,13 +602,13 @@
                 if (!initialPointX && !initialPointY){
                     initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
                     initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
-                    //console.log(initialPointX);
                 }
                 var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
                 var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
                 var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
                 var recalculatedGraph = moveGraph(p);
                 hgraph = recalculatedGraph;
+
                 // create a tween for rendering smoothly the transitions
                 var posSrc = {tmp: 150}
                 var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
@@ -596,6 +626,7 @@
                 };
                 tween.onUpdate(onUpdate);
                 tween.start();
+
                 initialPointX = clickedX;
                 initialPointY = clickedY;
             }
