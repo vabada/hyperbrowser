@@ -11,20 +11,16 @@
     <script type="text/javascript" src="js/tween.min.js"></script>
     <script type="text/javascript" src="js/OrbitControls.js"></script>
     <script type="text/javascript" src="hypergraph.js"></script>
+
     <!-- Vertex Shader-->
-    <!-- to implement the complex transformations:
-    vec2 c_mult(vec2 a, vec2 b) {
-      return vec2(a.x * b.x - a.y * b.y,
-        (a.x+a.y)*(b.x+b.y) - a.x*b.x - a.y*b.y);
-        to implement the rounded shape (cool):
-        glEnable( GL_POINT_SMOOTH );
-    } -->
     <script id="vertexShader" type="x-shader/x-vertex">
-      //attributes are read only
+
+      uniform float amplitude;
       attribute float displacement;
+
       void main(){
         gl_PointSize = 5.0;
-        vec3 newPosition = position + vec3(displacement);
+        vec3 newPosition = position + vec3(displacement * amplitude);;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
        /*gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);*/
       }
@@ -33,7 +29,16 @@
       void sweepLeftTrial(){
 
       }
+
+      /*to implement the complex transformations:
+      vec2 c_mult(vec2 a, vec2 b) {
+        return vec2(a.x * b.x - a.y * b.y,
+          (a.x+a.y)*(b.x+b.y) - a.x*b.x - a.y*b.y);
+          to implement the rounded shape (cool):
+          glEnable( GL_POINT_SMOOTH );
+      }*/
     </script>
+
     <!-- Fragment Shader-->
     <script id="fragmentShader" type="x-shader/x-fragment">
       void main(){
@@ -43,7 +48,7 @@
 
         gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
 
-        //pink from example
+        //at the moment it just sets a pink color
         gl_FragColor = vec4(1,0,1,1);
       }
     </script>
@@ -145,12 +150,12 @@
     camera.lookAt(scene.position);
 
     //add a circle to see the representation area
-    /*var materialC = new THREE.LineBasicMaterial({color: 0x000000});
+    var materialC = new THREE.LineBasicMaterial({color: 0x000000});
     var geometryC = new THREE.CircleGeometry(radius,64);
     geometryC.vertices.shift(); // Remove center vertex
     var outsideCircle = new THREE.Line(geometryC,materialC);
     outsideCircle.name = "outside";
-    scene.add(outsideCircle);*/
+    scene.add(outsideCircle);
 
     //create a random graph or import a graph
     var MAX_CHILDREN_PER_NODE = 3;
@@ -231,6 +236,8 @@
     //we ask for a frame draw
     requestAnimationFrame(render);
 
+    var frame = 0;
+
     //rendering (what's done in every iteration)
     function render() {
         //for the rendering stats
@@ -246,6 +253,14 @@
         system.geometry.verticesNeedUpdate = true;
         //edges also need update
         edges.geometry.verticesNeedUpdate = true;
+
+        // update the amplitude based on
+        // the frame value.
+        uniforms.amplitude.value =
+          Math.sin(frame);
+
+        // update the frame counter
+        frame += 0.05;
 
         requestAnimationFrame(render);
         renderer.render(scene,camera);
@@ -263,18 +278,27 @@
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
     	var distance = radius*0.96 / DEPTH_LEVEL;
     	var maxDeepen = DEPTH_LEVEL;
+
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
+
         var attributes = {
           displacement: {
             type: 'f', // a float
             value: [] // an empty array
           }
         };
+        uniforms = {
+          amplitude: {
+            type: 'f', // a float
+            value: 0
+          }
+        };
         var material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
 	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               attributes: attributes,
+              uniforms: uniforms,
               //vertexColors: true
             });
         //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
@@ -356,9 +380,7 @@
         var values = attributes.displacement.value;
         var verts = system.geometry.vertices.length + edges.geometry.vertices.length;
         for (var v = 0; v < verts; v++) {
-          //values.push(Math.random() * 30);
-          //values.push(0);
-          attributes.displacement.value.push(1);
+          values.push(Math.random() * 400);
         }
     }
 
@@ -570,6 +592,9 @@
             var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
             var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
 
+            //update the history of visited nodes
+            visited.push(intersects[0].index);
+
             /*// RECENTRES THE GRAPH APPLYING TRANSFORMATION
             var p = math.complex(-clickedX,-clickedY);
             var recalculatedGraph = moveGraph(p);
@@ -587,13 +612,9 @@
                     var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
                     system.geometry.vertices[count++].set(newX, newY, e.z);
                 });
-                system.sortParticles = true;
             };
             tween.onUpdate(onUpdate);
             tween.start();*/
-
-            visited.push(intersects[0].index);
-            //console.log(visited);
 
             // RECENTRES THE GRAPH WITH NEW ALGORITHM
             var recalculatedGraph = reCenterGraph(intersects[0].index);
@@ -611,13 +632,14 @@
                     var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
                     system.geometry.vertices[count++].set(newX, newY, e.z);
                 });
-                system.sortParticles = true;
             };
             tween.onUpdate(onUpdate);
             tween.start();
 
         } else { //if not, apply the desired transformation
             //This handles the drag and drop functionality
+
+            //------------------Algorithm in JavaScript (CPU)-----------------
             var initialPointX = null;
             var initialPointY = null;
             document.onmousemove = function(e) {
@@ -631,26 +653,13 @@
                 var recalculatedGraph = moveGraph(p);
                 hgraph = recalculatedGraph;
 
-                // create a tween for rendering smoothly the transitions
-                var posSrc = {tmp: 150}
-                var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
-                //to choose between transitions
-                tween.easing(TWEEN.Easing.Sinusoidal.InOut);
-                var onUpdate = function () {
-                    var count = 0;
-                    var tmp = this.tmp;
-                    system.geometry.vertices.forEach(function (e) {
-                        var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
-                        var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
-                        system.geometry.vertices[count++].set(newX, newY, e.z);
-                    });
-                    system.sortParticles = true;
-                };
-                tween.onUpdate(onUpdate);
-                tween.start();
-
                 initialPointX = clickedX;
                 initialPointY = clickedY;
+
+                //------------------Algorithm in Vertex-Shader (GPU)-----------------
+                //next step, comment code above and just pass a new uniform to the shader
+
+                //uniforms =
             }
             this.onmouseup = function() {
                 //we release the mouse button
