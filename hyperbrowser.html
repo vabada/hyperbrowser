@@ -15,28 +15,63 @@
     <!-- Vertex Shader-->
     <script id="vertexShader" type="x-shader/x-vertex">
 
+      //Define complex operations
+      #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
+      #define conjugate(a) vec2(a.x,-a.y)
+      #define division(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
+      //#define sum(a, b) vec2(a.x+b.x, a.y+b.y)
+
       uniform float amplitude;
+      uniform float transRE;
+      uniform float transIM;
+      uniform float scale;
+
       attribute float displacement;
 
+      //declare vec2 formado por transRE,transIM
+
       void main(){
-        gl_PointSize = 5.0;
-        vec3 newPosition = position + vec3(displacement * amplitude);;
+
+        gl_PointSize = 10.0;
+
+        vec2 p = vec2(transRE,transIM);
+        vec2 z = vec2(position.x,position.y);
+
+        //vec2 n<u></u>m = sum(z,p);
+        vec2 num = z + p;
+        vec2 pconj = conjugate(p);
+        vec2 den = vec2(1.0,0) + product(pconj,z);
+        vec2 transformed = division(num,den);
+
+        //float x = transformed.x * 1000.0;
+        //float y = transformed.y * 1000.0;
+        //vec2 res = vec2(transformed.x,transformed.y);
+
+        //old working stuff
+        //vec3 newPosition = position + vec3(displacement * amplitude);
+        //vec3 newPosition = vec3(position.x,position.y,0) + vec3(res,0);
+        //vec3 newPosition = (transformation(position,vec2(transRE,transIM)),0);
+        vec3 newPosition = vec3(den,0);
+
         gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-       /*gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);*/
+
+        //This is the most basic vertex shader
+        //gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
       }
 
-      //TODO
-      void sweepLeftTrial(){
-
+      //Function transformation
+      //
+      //@param in vec2 z original point
+      //@param in vec2 p transformation
+      //@return vec2 div new point
+      vec2 transformation(in vec2 z,in vec2 p){
+        vec2 num = z+p;
+        vec2 den = vec2(1.0,0) + product(conjugate(p),z);
+        vec2 div = division(num,den);
+        return div;
       }
 
-      /*to implement the complex transformations:
-      vec2 c_mult(vec2 a, vec2 b) {
-        return vec2(a.x * b.x - a.y * b.y,
-          (a.x+a.y)*(b.x+b.y) - a.x*b.x - a.y*b.y);
-          to implement the rounded shape (cool):
-          glEnable( GL_POINT_SMOOTH );
-      }*/
+      //glEnable( GL_POINT_SMOOTH );
     </script>
 
     <!-- Fragment Shader-->
@@ -254,14 +289,6 @@
         //edges also need update
         edges.geometry.verticesNeedUpdate = true;
 
-        // update the amplitude based on
-        // the frame value.
-        uniforms.amplitude.value =
-          Math.sin(frame);
-
-        // update the frame counter
-        frame += 0.05;
-
         requestAnimationFrame(render);
         renderer.render(scene,camera);
         /*for (var i = 0 ; i < labels.length ; i++){
@@ -292,6 +319,18 @@
           amplitude: {
             type: 'f', // a float
             value: 0
+          },
+          transRE: {
+            type: 'f', // a float
+            value: 1
+          },
+          transIM: {
+            type: 'f', // a float
+            value: 1
+          },
+          scale:{
+            type: 'f', //a float
+            value: radius*0.96
           }
         };
         var material = new THREE.ShaderMaterial({
@@ -380,7 +419,7 @@
         var values = attributes.displacement.value;
         var verts = system.geometry.vertices.length + edges.geometry.vertices.length;
         for (var v = 0; v < verts; v++) {
-          values.push(Math.random() * 400);
+          values.push(1);
         }
     }
 
@@ -639,11 +678,11 @@
         } else { //if not, apply the desired transformation
             //This handles the drag and drop functionality
 
-            //------------------Algorithm in JavaScript (CPU)-----------------
             var initialPointX = null;
             var initialPointY = null;
             document.onmousemove = function(e) {
-                if (!initialPointX && !initialPointY){
+                //------------------Algorithm in JavaScript (CPU)-----------------
+                /*if (!initialPointX && !initialPointY){
                     initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
                     initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
                 }
@@ -654,16 +693,40 @@
                 hgraph = recalculatedGraph;
 
                 initialPointX = clickedX;
-                initialPointY = clickedY;
+                initialPointY = clickedY;*/
 
-                //------------------Algorithm in Vertex-Shader (GPU)-----------------
+
+                //----------------Algorithm in Vertex-Shader (GPU)-----------------
                 //next step, comment code above and just pass a new uniform to the shader
+                if (!initialPointX && !initialPointY){
+                    initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
+                    initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
+                }
+                var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
+                var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
 
-                //uniforms =
+                // update the amplitude based on
+                // the frame value.
+                uniforms.amplitude.value =
+                  frame;
+
+                //here we pass the values of the transformation (p=RE+jIM) to be applied
+                uniforms.transRE.value = clickedX-initialPointX;
+                uniforms.transIM.value = clickedY-initialPointY;
+
+                // update the frame counter
+                frame += 1;
+
+                //initialPointX = clickedX;
+                //initialPointY = clickedY;
             }
             this.onmouseup = function() {
                 //we release the mouse button
                 document.onmousemove = null;
+
+                //transformation 1, so that no transformation is performed
+                //uniforms.transRE.value = 1;
+                //uniforms.transIM.value = 1;
             }
         }
     }
