@@ -18907,7 +18907,7 @@ THREE.WebGLRenderer = function ( parameters ) {
 					if ( customAttribute.size === 1 ) {
 
 						for ( ca = 0; ca < cal; ca ++ ) {
-
+              //console.log(sortArray[ ca ][ 1 ]);
 							index = sortArray[ ca ][ 1 ];
 
 							customAttribute.array[ ca ] = customAttribute.value[ index ];

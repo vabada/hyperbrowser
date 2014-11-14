@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Scalable Hyperbolic Graph</title>
-    <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
     <!--<script type="text/javascript" src="js/three.min.js"></script>-->
     <script type="text/javascript" src="js/three.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
@@ -128,13 +127,13 @@
     stats.domElement.style.position = 'absolute';
     stats.domElement.style.left = '0px';
     stats.domElement.style.top = '0px';
-    $("#stats").append( stats.domElement );
+    document.body.appendChild( stats.domElement );
+
     var rendererStats   = new THREEx.RendererStats()
     rendererStats.domElement.style.position = 'absolute'
     rendererStats.domElement.style.left = '0px'
     rendererStats.domElement.style.bottom   = '0px'
-    //document.body.appendChild( rendererStats.domElement )
-    $("#rendererStats").append( rendererStats.domElement );
+    document.body.appendChild( rendererStats.domElement )
 
     //create the scene, where all the objects are added
     var scene = new THREE.Scene();
@@ -227,7 +226,7 @@
     controls.noPan = true;
 
     //append the renderer to the page
-    $("#output").append(renderer.domElement);
+    document.body.appendChild( renderer.domElement );
 
     //we ask for a frame draw
     requestAnimationFrame(render);
@@ -358,7 +357,8 @@
         var verts = system.geometry.vertices.length + edges.geometry.vertices.length;
         for (var v = 0; v < verts; v++) {
           //values.push(Math.random() * 30);
-          values.push(1);
+          //values.push(0);
+          attributes.displacement.value.push(1);
         }
     }
 
@@ -531,14 +531,12 @@
     document.getElementById('numberOfNodes').style.position = 'absolute';
     document.getElementById('numberOfNodes').style.right = '10px';
     document.getElementById('numberOfNodes').style.top = '10px';
-    $("#numberOfNodes").append( numberOfNodes.domElement );
 
     //information about interaction with nodes. Align bottom-right
     document.getElementById('clicked').innerHTML = "No interaction until now";
     document.getElementById('clicked').style.position = 'absolute';
     document.getElementById('clicked').style.right = '10px';
     document.getElementById('clicked').style.bottom = '10px';
-    $("#clicked").append( clicked.domElement );
 
     //------------------------LISTENERS--------------------------
     //add listener to allow clickable objects
