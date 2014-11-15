@@ -28,9 +28,13 @@
 
       attribute float displacement;
 
+      varying vec3 vColor;
+
       //declare vec2 formado por transRE,transIM
 
       void main(){
+
+        vColor = color;
 
         gl_PointSize = 10.0;
 
@@ -76,6 +80,8 @@
 
     <!-- Fragment Shader-->
     <script id="fragmentShader" type="x-shader/x-fragment">
+
+      varying vec3 vColor;
       void main(){
 
         /*vec2 pos = mod(gl_FragCoord.xy, vec2(50.0)) - vec2(25.0);
@@ -83,8 +89,10 @@
 
         gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
 
+        gl_FragColor = vec4( vColor.rgb, 1.0 );
+
         //at the moment it just sets a pink color
-        gl_FragColor = vec4(1,0,1,1);
+        //gl_FragColor = vec4(1,0,1,1);
       }
     </script>
     <style>
@@ -338,7 +346,7 @@
 	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               attributes: attributes,
               uniforms: uniforms,
-              //vertexColors: true
+              vertexColors: true
             });
         //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
 
@@ -615,8 +623,6 @@
 
     //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
-
-        var self = this;
 
         event.preventDefault();
         //check if some node clicked, for displaying information and centering
