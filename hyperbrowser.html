@@ -25,12 +25,7 @@
       #define conjugate(a) vec2(a.x,-a.y)
       #define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
 
-      //uniform float amplitude;
       uniform vec2 trans;
-      uniform float scale;
-
-      //attribute float displacement;
-
       varying vec3 vColor;
 
       void main(){
@@ -40,40 +35,12 @@
 
         gl_PointSize = 10.0;
 
-        vec2 z = vec2(position.x/scale,position.y/scale);
-
-        vec2 div = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
-
-        vec2 newPosition = vec2(div.x*scale,div.y*scale);
-
-        //float x = transformed.x * 1000.0;
-        //float y = transformed.y * 1000.0;
-        //vec2 res = vec2(transformed.x,transformed.y);
-
-        //old working stuff
-        //vec3 newPosition = position + vec3(displacement * amplitude);
-        //vec3 newPosition = vec3(position.x,position.y,0) + vec3(res,0);
-        //vec3 newPosition = vec3(transformed,0);
+        vec2 z = vec2(position.x,position.y);
+        vec2 newPosition = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
 
         gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
-
-        //This is the most basic vertex shader
-        //gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
       }
-
-      //Function transformation
-      //
-      //@param in vec2 z original point
-      //@param in vec2 p transformation
-      //@return vec2 div new point
-      /*vec2 transformation(in vec2 z,in vec2 p){
-        vec2 num = z+p;
-        vec2 den = vec2(1.0,0) + product(conjugate(p),z);
-        vec2 div = division(num,den);
-        return div;
-      }*/
-
-      //glEnable( GL_POINT_SMOOTH );
+      //glEnable( GL_POINT_SMOOTH ); //For rounded nodes
     </script>
 
     <!-- Fragment Shader-->
@@ -93,9 +60,6 @@
         gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
 
         gl_FragColor = vec4( vColor.rgb, 1.0 );
-
-        //at the moment it just sets a pink color
-        //gl_FragColor = vec4(1,0,1,1);
       }
     </script>
     <style>
@@ -152,13 +116,8 @@
     //load the library math.js to ease work with complex numbers
     var math = mathjs();
 
-  	//outer limit of the representation area
-  	var radius = 4000;
     //variables for the size of the proper representation area
     var graphWidthArea,graphHeigthArea;
-
-    //system of points (particles), what is represented
-    var system;
 
     //history of nodes clicked, to add back/forward functionality
     var visited = [];
@@ -166,6 +125,8 @@
     //labels, also room for improvement here TODO
     var labels = [];
 
+    //system of points (particles), what is represented
+    var system;
     //initialise geometry and material for edges
     var edges;
     var edgeGeometry = new THREE.Geometry()
@@ -192,12 +153,12 @@
     //create camera
     var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
     //point the camera to the center (related to DISTANCE)
-    camera.position.z = 10000;
+    camera.position.z = 2.5;
     camera.lookAt(scene.position);
 
     //add a circle to see the representation area
     var materialC = new THREE.LineBasicMaterial({color: 0x000000});
-    var geometryC = new THREE.CircleGeometry(radius,64);
+    var geometryC = new THREE.CircleGeometry(1.03,64);
     geometryC.vertices.shift(); // Remove center vertex
     var outsideCircle = new THREE.Line(geometryC,materialC);
     outsideCircle.name = "outside";
@@ -314,41 +275,26 @@
     //draw the initial Graph
     function drawGraph(){
     	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
-    	var distance = radius*0.96 / DEPTH_LEVEL;
+    	var distance = 1 / DEPTH_LEVEL;
     	var maxDeepen = DEPTH_LEVEL;
 
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
 
-        var attributes = {
-          displacement: {
-            type: 'f', // a float
-            value: [] // an empty array
-          }
-        };
         initialTrans = new THREE.Vector2(0,0);
         uniforms = {
-          amplitude: {
-            type: 'f', // a float
-            value: 0
-          },
           trans: {
             type: 'v2', // a vec2
             value: initialTrans
           },
-          scale:{
-            type: 'f', //a float
-            value: radius*0.96
-          }
         };
         var material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
 	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
-              attributes: attributes,
               uniforms: uniforms,
               vertexColors: true
             });
-        //var material = new THREE.PointCloudMaterial({size:400,vertexColors:true});
+        //var material = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
 
         //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
@@ -418,17 +364,11 @@
 
         edges = new THREE.Line(edgeGeometry, edgeMaterial, THREE.LinePieces);
         edges.name = "edges";
-        //scene.add(edges);
+        scene.add(edges);
 
         system = new THREE.PointCloud(geom, material);
         system.name = "nodes";
         scene.add(system);
-
-        var values = attributes.displacement.value;
-        var verts = system.geometry.vertices.length + edges.geometry.vertices.length;
-        for (var v = 0; v < verts; v++) {
-          values.push(1);
-        }
     }
 
     //function reCenterGraph
@@ -438,7 +378,7 @@
         var newDepth = newGraph.calculateNewDepth(newCenter);
 
         //to modify this DEPTH_LEVEL for a method to find it out in the given graph
-        var distance = radius*0.96 / newDepth;
+        var distance = 1 / newDepth;
         var maxDeepen = newDepth;
 
         newGraph.resetProcessed();
@@ -511,20 +451,17 @@
     function moveGraph(p){
 
         var newGraph = hgraph;
-        var scale = radius*0.96;
-        //console.log(scale);
 
         for (var i = 0 ; i<newGraph.vertices.length ; i++){
             //z: complex number to transform
             var z = math.complex(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y);
-            z = math.divide(z,scale);
 
             //apply transformation
-            var updated = transformation(p,z);
+            var newPos = transformation(p,z);
 
             //update position of the node in the newGraph
-            newGraph.vertices[i].position.x = (updated.re * scale);
-            newGraph.vertices[i].position.y = (updated.im * scale);
+            newGraph.vertices[i].position.x = newPos.re;
+            newGraph.vertices[i].position.y = newPos.im;
 
             //update the position for the labels
             //labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
@@ -619,17 +556,18 @@
 
     //variables used by all events:
     var raycaster = new THREE.Raycaster();
-    raycaster.params.PointCloud.threshold = 90;
+    var vector = new THREE.Vector3();
+    raycaster.params.PointCloud.threshold = 0.0225;
 
     //print the properties of a node  if is clicked and bring it to the center
     function onDocumentMouseDown(event) {
 
         event.preventDefault();
         //check if some node clicked, for displaying information and centering
-        var vector = new THREE.Vector3(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+        vector.set(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         vector.unproject(camera);
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
-        var intersects = raycaster.intersectObject(system);
+        intersects = raycaster.intersectObject(system);
 
         if (intersects.length > 0) {
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
