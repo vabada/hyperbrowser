@@ -15,22 +15,23 @@
     <!-- Vertex Shader-->
     <script id="vertexShader" type="x-shader/x-vertex">
 
+      // switch on high precision floats
+      #ifdef GL_ES
+		    precision highp float;
+		  #endif
+
       //Define complex operations
       #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
       #define conjugate(a) vec2(a.x,-a.y)
-      //#define division(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
-      //#define sum(a, b) vec2(a.x+b.x, a.y+b.y) //override
+      #define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
 
-      uniform float amplitude;
-      uniform float transRE;
-      uniform float transIM;
+      //uniform float amplitude;
+      uniform vec2 trans;
       uniform float scale;
 
-      attribute float displacement;
+      //attribute float displacement;
 
       varying vec3 vColor;
-
-      //declare vec2 formado por transRE,transIM
 
       void main(){
 
@@ -39,20 +40,11 @@
 
         gl_PointSize = 10.0;
 
-        vec2 p = vec2(transRE,transIM);
         vec2 z = vec2(position.x/scale,position.y/scale);
 
-        //vec2 num = sum(z,p);
-        vec2 num = z + p;
-        vec2 pconj = conjugate(p);
-        vec2 den = vec2(1.0,0) + product(pconj,z);
-        //vec2 transformed = division(num,den);
+        vec2 div = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
 
-        //vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
-        float transformedX = ((num.x*den.x+num.y*den.y)/(den.x*den.x+den.y*den.y));
-        float transformedY = ((num.y*den.x-num.x*den.y)/(den.x*den.x+den.y*den.y));
-
-        vec2 transformed = vec2(transformedX*scale,transformedY*scale);
+        vec2 newPosition = vec2(div.x*scale,div.y*scale);
 
         //float x = transformed.x * 1000.0;
         //float y = transformed.y * 1000.0;
@@ -61,10 +53,9 @@
         //old working stuff
         //vec3 newPosition = position + vec3(displacement * amplitude);
         //vec3 newPosition = vec3(position.x,position.y,0) + vec3(res,0);
-        //vec3 newPosition = (transformation(position,vec2(transRE,transIM)),0);
-        vec3 newPosition = vec3(transformed,0);
+        //vec3 newPosition = vec3(transformed,0);
 
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
 
         //This is the most basic vertex shader
         //gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
@@ -87,6 +78,11 @@
 
     <!-- Fragment Shader-->
     <script id="fragmentShader" type="x-shader/x-fragment">
+
+      // switch on high precision floats
+      #ifdef GL_ES
+        precision highp float;
+      #endif
 
       varying vec3 vColor;
       void main(){
@@ -330,18 +326,15 @@
             value: [] // an empty array
           }
         };
+        initialTrans = new THREE.Vector2(0,0);
         uniforms = {
           amplitude: {
             type: 'f', // a float
             value: 0
           },
-          transRE: {
-            type: 'f', // a float
-            value: 0
-          },
-          transIM: {
-            type: 'f', // a float
-            value: 0
+          trans: {
+            type: 'v2', // a vec2
+            value: initialTrans
           },
           scale:{
             type: 'f', //a float
@@ -425,7 +418,7 @@
 
         edges = new THREE.Line(edgeGeometry, edgeMaterial, THREE.LinePieces);
         edges.name = "edges";
-        scene.add(edges);
+        //scene.add(edges);
 
         system = new THREE.PointCloud(geom, material);
         system.name = "nodes";
@@ -694,23 +687,6 @@
             var initialPointX = null;
             var initialPointY = null;
             document.onmousemove = function(e) {
-                //------------------Algorithm in JavaScript (CPU)-----------------
-                /*if (!initialPointX && !initialPointY){
-                    initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
-                    initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
-                }
-                var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
-                var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
-                var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
-                var recalculatedGraph = moveGraph(p);
-                hgraph = recalculatedGraph;
-
-                initialPointX = clickedX;
-                initialPointY = clickedY;*/
-
-
-                //----------------Algorithm in Vertex-Shader (GPU)-----------------
-                //next step, comment code above and just pass a new uniform to the shader
                 if (!initialPointX && !initialPointY){
                     initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
                     initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
@@ -718,16 +694,20 @@
                 var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
                 var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
 
-                // update the amplitude based on
-                // the frame value.
-                //uniforms.amplitude.value = frame;
+                //------------------Algorithm in JavaScript (CPU)-----------------
 
-                //here we pass the values of the transformation (p=RE+jIM) to be applied
-                uniforms.transRE.value = clickedX-initialPointX;
-                uniforms.transIM.value = clickedY-initialPointY;
+                /*var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
+                var recalculatedGraph = moveGraph(p);
+                hgraph = recalculatedGraph;
 
-                // update the frame counter
-                //frame += 1;
+                initialPointX = clickedX;
+                initialPointY = clickedY;*/
+
+                //----------------Algorithm in Vertex-Shader (GPU)-----------------
+
+                //here we pass the value of the transformation (p=RE+jIM) to the shaders
+                initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
+                uniforms.trans.value = initialTrans;
 
                 //initialPointX = clickedX;
                 //initialPointY = clickedY;
