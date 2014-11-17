@@ -26,6 +26,7 @@
       #define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
 
       uniform vec2 trans;
+      uniform int compute;
       varying vec3 vColor;
 
       void main(){
@@ -76,9 +77,22 @@
             right:10px;
             top:35px;
         }
-        #button{
+        #buttonSwap{
             position:absolute;
             right:5px;
+        }
+        #buttonAdd{
+            position:absolute;
+            top:190px;
+            right:10px;
+        }
+        #add{
+            position:absolute;
+            right:10px;
+            top:125px;
+        }
+        #add div{
+          float:right;
         }
     </style>
 </head>
@@ -90,8 +104,14 @@
         <input type="radio" name="graph" value="random" checked="checked">Random<br>
         <input type="radio" name="graph" value="life">Tree of Life<br>
         <input type="radio" name="graph" value="languages">Languages of the world<br>
-        <input id="button" type="submit" value="Swap">
+        <input id="buttonSwap" type="submit" value="Swap">
     </form>
+    <div id="add">
+        Adding a new Node:<br>
+        <div>Parent: <input type="number" id="newParent" name="parent" value="2"></div><br>
+        <div>Name: <input type="text" id="newName" name="name" value="illo, me llamo illo"></div>
+    </div>
+    <button onclick="addNode()" id="buttonAdd">Add node</button>
     <div id="numberOfNodes">
     </div>
     <div id="output">
@@ -172,6 +192,8 @@
     //hgraph is the graph in every moment
     var hgraph;
 
+    var hgraphs = [];
+
     //http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
     //getting the type of graph from URL parameter
     var queryString = function () {
@@ -234,8 +256,8 @@
     renderer.setSize(graphWidthArea, graphHeigthArea);
     renderer.autoUpdateObjects = false;
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.noRotate = true;
-    controls.noPan = true;
+    //controls.noRotate = true;
+    //controls.noPan = true;
 
     //append the renderer to the page
     document.body.appendChild( renderer.domElement );
@@ -287,6 +309,10 @@
             type: 'v2', // a vec2
             value: initialTrans
           },
+          compute: {
+            type: 'int', // an int
+            value: 0
+          }
         };
         var material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
@@ -371,6 +397,112 @@
         scene.add(system);
     }
 
+    //draw the initial Graph
+    function drawNewGraph(newZ,hgraph2){
+      //to modify this DEPTH_LEVEL for a method to find it out in the given graph
+      var depth = hgraph2.calculateNewDepth(0);
+      var distance = 1 / depth;
+      var maxDeepen = depth;
+      var system2,edges2;
+
+      var edgeGeometry2 = new THREE.Geometry()
+      var edgeMaterial2 = new THREE.LineBasicMaterial({color:0xaa00aa,linewidth:1});
+
+      //create the geometry and material for the particle system
+      var geom2 = new THREE.Geometry();
+
+      initialTrans = new THREE.Vector2(0,0);
+      uniforms = {
+        trans: {
+          type: 'v2', // a vec2
+          value: initialTrans
+        },
+      };
+      /*var material = new THREE.ShaderMaterial({
+            vertexShader: document.getElementById( 'vertexShader' ).textContent,
+            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+            uniforms: uniforms,
+            vertexColors: true
+          });*/
+      var material2 = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
+
+      //create first particle, centered in the middle
+      var particle = new THREE.Vector3(0,0,newZ);
+      hgraph2.vertices[0].position = particle;
+      var particleColor =  system.geometry.colors[0];
+      geom2.vertices.push(particle);
+      geom2.colors.push(particleColor);
+
+      //Set the label name and position
+      //label = makeTextSprite( hgraph2.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+      //label.position.set(0,0,newZ);
+      //labels.push(label);
+
+      //calculate angle corresponding each child
+      var angle = (2*math.pi)/(hgraph2.vertices[0].linksTo.length)
+      //number where to start
+      var iter = math.complex({r:1,phi:-angle/2});
+      //complex number to multiply to get desired
+      var trans = math.complex({r:1,phi:angle});
+      //draw all the linked nodes to the initial node
+      for (var i=0 ; i<hgraph2.vertices[0].linksTo.length ; i++){
+        drawChild(hgraph2.vertices[0].linksTo[i].id,1,iter,angle,particle);
+        iter = math.multiply(iter,trans);
+      }
+      //system.geometry.colors[id];
+
+      //subfunction for drawing recursively every child (linked node)
+      function drawChild(son,prof,iteration,angle,particleFather){
+        posX = (distance*prof)*iteration.re;
+         posY = (distance*prof)*iteration.im;
+        prof++;
+         //id of the processing vertex
+        var id = hgraph2.vertices[son].id;
+        //create the particle in the desired position
+        var particle = new THREE.Vector3(posX, posY, newZ);
+        //associate particle position to the graph
+        hgraph2.vertices[id].position = particle;
+        geom2.vertices[id] = particle;
+        //system.geometry.colors[id];
+        geom2.colors[id] = new THREE.Color(0xffffff);
+
+        edgeGeometry2.vertices.push(particle);
+        edgeGeometry2.vertices.push(particleFather);
+
+        //Set the label name and position
+        label = makeTextSprite( hgraph2.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        label.position.set(posX,posY,0);
+        //labels[id]=label;
+
+         //calculate angle corethrsponding each child
+        var subangle = (angle)/(hgraph2.vertices[son].linksTo.length);
+        //number where to start
+        var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+          start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
+        //complex number to multiply to get desired
+        var transform = math.complex({r:1,phi:subangle});
+         //draw all the linked nodes tproo this node
+         for (var i=0 ; i<hgraph2.vertices[son].linksTo.length ; i++){
+          drawChild(hgraph2.vertices[son].linksTo[i].id,prof,start,subangle,particle);
+           start = math.multiply(start,transform);
+        }
+      }
+
+      /*for (var i = 0 ; i < labels.length ; i++){
+          scene.add(labels[i]);
+      }*/
+
+      visited.push(0);
+
+      edges2 = new THREE.Line(edgeGeometry2, edgeMaterial2, THREE.LinePieces);
+      edges2.name = "edges";
+      scene.add(edges2);
+
+      system2 = new THREE.PointCloud(geom2, material2);
+      system2.name = "nodes";
+      scene.add(system2);
+    }
+
     //function reCenterGraph
     //@param newCenter id of the node to put in the center
     function reCenterGraph(newCenter){
@@ -444,6 +576,31 @@
             }
         }
     }
+
+    var zProf = 0;
+
+    //function addNode
+    //
+    //@param
+    //@return
+    function addNode(){
+      hgraphs[0] = hgraph;
+      var hgraph2 = hgraph;
+
+      var id = hgraph2.vertices.length;
+      var vertex = new Vertex(id);
+      vertex.id = id;
+      vertex.name = document.getElementById('newName').value || "My name is: "+id;
+
+      hgraph2.addVertex(vertex,hgraph2.vertices[document.getElementById('newParent').value]);
+      console.log(hgraph2.vertices.length);
+      zProf += 0.3;
+      drawNewGraph(zProf,hgraph2);
+
+      //hgraphs[1] = hgraph2;
+
+    }
+
 
     //function moveGraph
     //@param p complex transformation
@@ -622,7 +779,7 @@
         } else { //if not, apply the desired transformation
             //This handles the drag and drop functionality
 
-            var initialPointX = null;
+            /*var initialPointX = null;
             var initialPointY = null;
             document.onmousemove = function(e) {
                 if (!initialPointX && !initialPointY){
@@ -635,7 +792,7 @@
                 //------------------Algorithm in JavaScript (CPU)-----------------
 
                 //Calculate the transformations
-                var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
+                /*var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
                 var recalculatedGraph = moveGraph(p);
                 hgraph = recalculatedGraph;
 
@@ -650,8 +807,8 @@
                 //----------------Algorithm in Vertex-Shader (GPU)-----------------
 
                 //here we pass the value of the transformation (p=RE+jIM) to the shaders
-                //initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
-                //uniforms.trans.value = initialTrans;
+                initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
+                uniforms.trans.value = initialTrans;
 
                 //initialPointX = clickedX;
                 //initialPointY = clickedY;
@@ -659,7 +816,7 @@
             this.onmouseup = function() {
                 //we release the mouse button
                 document.onmousemove = null;
-            }
+            }*/
         }
     }
 
