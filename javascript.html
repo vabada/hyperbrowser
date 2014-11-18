@@ -247,7 +247,35 @@
         label.position.set(0,0,0);
         //labels.push(label);
 
-        //calculate angle corresponding each child
+        //calculate angle for children depending on number of grandchildren
+        var children = [];
+        var grandchildren = 0;
+        for (var i = 0 ; i < hgraph.vertices[0].linksTo.length ; i++){
+          children[i] = 0;
+          for (var j = 0 ; j < hgraph.vertices[0].linksTo[i].linksTo.length ; j++){
+            children[i] += 1;
+            grandchildren++;
+          }
+        }
+        var angles = [];
+        for (var i = 0 ; i < children.length ; i++){
+          angles[i] = (2*math.pi) * (children[i] /grandchildren);
+          console.log(angles[i]);
+        }
+
+        //var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
+        //number where to start
+        var iter = math.complex({r:1,phi:-angles[0]/2});
+        //complex number to multiply to get desired
+        //draw all the linked nodes to the initial node
+        for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
+          //if (i < hgraph.vertices[0].linksTo.length - 1 )
+          var trans = math.complex({r:1,phi:angles[i]});
+          drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angles[i],particle);
+          iter = math.multiply(iter,trans);
+        }
+
+        /*//calculate angle corresponding each child (BEFORE)
         var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
         //number where to start
         var iter = math.complex({r:1,phi:-angle/2});
@@ -257,9 +285,15 @@
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
         	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle);
         	iter = math.multiply(iter,trans);
-        }
+        }*/
 
         //subfunction for drawing recursively every child (linked node)
+        //
+        //@param son id of the node to draw
+        //@param prof depth of this node (to the center)
+        //@param iteration angle where to start
+        //@param angle total angle assigned for this children
+        //@param particleFather position of the dad, to represent the edge
         function drawChild(son,prof,iteration,angle,particleFather){
         	posX = (distance*prof)*iteration.re;
 	       	posY = (distance*prof)*iteration.im;
