@@ -3,6 +3,7 @@
 <head>
     <title>Scalable Hyperbolic Graph</title>
     <!--<script type="text/javascript" src="js/three.min.js"></script>-->
+    <!--<script src='http://mrdoob.github.com/three.js/build/three.min.js'></script>-->
     <script type="text/javascript" src="js/three.js"></script>
     <script type="text/javascript" src="js/stats.js"></script>
     <script type="text/javascript" src='js/threex.rendererstats.js'></script>
@@ -36,14 +37,14 @@
 
         gl_PointSize = 10.0;
 
-        //if  (compute == 1){
+        if  (compute == 1){
           vec2 z = vec2(position.x,position.y);
           vec2 newPosition = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
           gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
-        /*} else {
+        } else {
           vec3 newPosition = position;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-        }*/
+        }
 
         //gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
       }
@@ -134,6 +135,7 @@
 
     //system of points (particles), what is represented
     var system;
+
     //initialise geometry and material for edges
     var edges;
     var edgeGeometry = new THREE.Geometry()
@@ -251,11 +253,13 @@
 
     //we ask for a frame draw
     requestAnimationFrame(render);
-
-    var frame = 0;
+    //var r = 0
 
     //rendering (what's done in every iteration)
     function render() {
+        //r += 0.01;
+        //camera.position.x += 0.05*Math.cos(r);
+
         //for the rendering stats
         stats.update();
         rendererStats.update(renderer);
@@ -301,13 +305,13 @@
             value: 0
           }
         };
-        var material = new THREE.ShaderMaterial({
+        material = new THREE.ShaderMaterial({
               vertexShader: document.getElementById( 'vertexShader' ).textContent,
 	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
               uniforms: uniforms,
               vertexColors: true
             });
-        //var material = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
+        //material = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
 
         //create first particle, centered in the middle
         var particle = new THREE.Vector3(0,0,0);
@@ -674,12 +678,12 @@
                   controls.noRotate = true;
                   controls.noPan = true;
 
-                //----------------Algorithm in Vertex-Shader (GPU)-----------------
+                  //----------------Algorithm in Vertex-Shader (GPU)-----------------
 
-                //here we pass the value of the transformation (p=RE+jIM) to the shaders
-                initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
-                uniforms.trans.value = initialTrans;
-                //uniforms.compute.value = 1;
+                  //here we pass the value of the transformation (p=RE+jIM) to the shaders
+                  initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
+                  uniforms.trans.value = initialTrans;
+                  uniforms.compute.value = 1;
                 }
 
                 //initialPointX = clickedX;
@@ -688,7 +692,7 @@
             this.onmouseup = function() {
                 //we release the mouse button
                 document.onmousemove = null;
-                //uniforms.compute.value = 0;
+                uniforms.compute.value = 0;
                 controls.noRotate = false;
                 controls.noPan = false;
             }

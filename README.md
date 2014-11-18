@@ -1,4 +1,4 @@
-hyperBrowser
+hyperbrowser
 ============
 
 Scalable Hyperbolic Browser for Information Visualization with [three.js](http://threejs.org/)
@@ -10,7 +10,7 @@ Check stable versions here:
 
 Some parameters may be set in the query string:
 * graph = random || languages || life (default is random)
-* depth = int within [1,15] (default is 4 )
+* depth = int within [1,15] - (default is 4)
 
 For example:
 ```
