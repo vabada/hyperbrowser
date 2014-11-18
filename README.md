@@ -1,16 +1,28 @@
 hyperBrowser
 ============
 
-Scalable Hyperbolic Browser for Information Visualization with ThreeJS
+Scalable Hyperbolic Browser for Information Visualization with [three.js](http://threejs.org/)
 
-Check a stable version here: http://hyperbrowser.herokuapp.com/
+Check stable versions here:
+* Working with [shaders code](http://hyperbrowser.herokuapp.com/shaders.html)
+* Working with [javascript code](http://hyperbrowser.herokuapp.com/javascript.html)
+* First sketches adding [temporality](http://hyperbrowser.herokuapp.com/temporal.html)
 
+Some parameters may be set in the query string:
+* graph = random || languages || life (default is random)
+* depth = int within [1,15] (default is 4 )
+
+For example:
+```
+/javascript.html?graph=random&depth=5
+```
 To view it locally simply open hyperbrowser.html
 
 And to play around check the interactivity:
 
 * Click on a node to redraw the graph with this node in the center
-* Drag and drop anywhere to explore the graph
+* Press shift and drag and drop the mouse anywhere to explore the graph
+* Drag and drop the mouse to change the point of view
 * Swap between graphs in the upper right list
 
 Example graphs

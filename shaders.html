@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scalable Hyperbolic Graph</title>
+    <!--<script type="text/javascript" src="js/three.min.js"></script>-->
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/stats.js"></script>
+    <script type="text/javascript" src='js/threex.rendererstats.js'></script>
+    <script type="text/javascript" src="js/dat.gui.js"></script>
+    <script type="text/javascript" src="js/math.js"></script>
+    <script type="text/javascript" src="js/tween.min.js"></script>
+    <script type="text/javascript" src="js/OrbitControls.js"></script>
+    <script type="text/javascript" src="hypergraph.js"></script>
+
+    <!-- Vertex Shader-->
+    <script id="vertexShader" type="x-shader/x-vertex">
+
+      // switch on high precision floats
+      #ifdef GL_ES
+		    precision highp float;
+		  #endif
+
+      //Define complex operations
+      #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
+      #define conjugate(a) vec2(a.x,-a.y)
+      #define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
+
+      uniform vec2 trans;
+      uniform int compute;
+      varying vec3 vColor;
+
+      void main(){
+
+        //pass color to the vertex shader
+        vColor = color;
+
+        gl_PointSize = 10.0;
+
+        //if  (compute == 1){
+          vec2 z = vec2(position.x,position.y);
+          vec2 newPosition = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
+        /*} else {
+          vec3 newPosition = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+        }*/
+
+        //gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
+      }
+      //glEnable( GL_POINT_SMOOTH ); //For rounded nodes
+    </script>
+
+    <!-- Fragment Shader-->
+    <script id="fragmentShader" type="x-shader/x-fragment">
+
+      // switch on high precision floats
+      #ifdef GL_ES
+        precision highp float;
+      #endif
+
+      varying vec3 vColor;
+      void main(){
+
+        /*vec2 pos = mod(gl_FragCoord.xy, vec2(50.0)) - vec2(25.0);
+        float dist_squared = dot(pos, pos);
+
+        gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
+
+        gl_FragColor = vec4( vColor.rgb, 1.0 );
+      }
+    </script>
+    <style>
+        body{
+            margin: 0;
+            overflow: hidden;
+        }
+        #content{
+            margin: 0;
+            overflow:hidden;
+        }
+        #type{
+            position:absolute;
+            right:10px;
+            top:35px;
+        }
+        #buttonSwap{
+            position:absolute;
+            right:5px;
+        }
+    </style>
+</head>
+<body>
+<div id="content">
+    <div id="stats">
+    </div>
+    <form id="type">
+        <input type="radio" name="graph" value="random" checked="checked">Random<br>
+        <input type="radio" name="graph" value="life">Tree of Life<br>
+        <input type="radio" name="graph" value="languages">Languages of the world<br>
+        <input id="buttonSwap" type="submit" value="Swap">
+    </form>
+    <div id="numberOfNodes">
+    </div>
+    <div id="output">
+    </div>
+    <div id="clicked">
+    </div>
+    <div id="rendererStats">
+    </div>
+</div>
+<script type="text/javascript">
+    //Implemented, not in use anymore
+    //Function to delete the scene (except the outer circle)
+    function deleteGraph(){
+        while (scene.children.length > 1){
+            for (var i=0 ; i<scene.children.length ; i++){
+                if (scene.children[i].name != "outside")
+                    scene.remove(scene.children[i]);
+            }
+        }
+    }
+
+    //load the library math.js to ease work with complex numbers
+    var math = mathjs();
+
+    //variables for the size of the proper representation area
+    var graphWidthArea,graphHeigthArea;
+
+    //history of nodes clicked, to add back/forward functionality
+    var visited = [];
+
+    //labels, also room for improvement here TODO
+    var labels = [];
+
+    //system of points (particles), what is represented
+    var system;
+    //initialise geometry and material for edges
+    var edges;
+    var edgeGeometry = new THREE.Geometry()
+    var edgeMaterial = new THREE.LineBasicMaterial({color:0xaaaa00,linewidth:1});
+
+    //initialise the stats, to check performance-------------------------------
+    var stats = new Stats();
+    stats.setMode(0); // 0: fps, 1: ms
+    // Align top-left
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild( stats.domElement );
+
+    var rendererStats   = new THREEx.RendererStats()
+    rendererStats.domElement.style.position = 'absolute'
+    rendererStats.domElement.style.left = '0px'
+    rendererStats.domElement.style.bottom   = '0px'
+    document.body.appendChild( rendererStats.domElement )
+
+    //create the scene, where all the objects are added
+    var scene = new THREE.Scene();
+
+    //create camera
+    var camera = new THREE.PerspectiveCamera(45, window.innerWidth/ window.innerHeight, 0.1, 100000);
+    //point the camera to the center (related to DISTANCE)
+    camera.position.z = 2.5;
+    camera.lookAt(scene.position);
+
+    //add a circle to see the representation area
+    var materialC = new THREE.LineBasicMaterial({color: 0x000000});
+    var geometryC = new THREE.CircleGeometry(1.03,64);
+    geometryC.vertices.shift(); // Remove center vertex
+    var outsideCircle = new THREE.Line(geometryC,materialC);
+    outsideCircle.name = "outside";
+    scene.add(outsideCircle);
+
+    //create a random graph or import a graph
+    var MAX_CHILDREN_PER_NODE = 3;
+    var MIN_CHILDREN_PER_NODE = 2;
+    var DEPTH_LEVEL = 4;
+
+    //hgraph is the graph in every moment
+    var hgraph;
+
+    var hgraphs = [];
+
+    //http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+    //getting the type of graph from URL parameter
+    var queryString = function () {
+      var query_string = {};
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i=0;i<vars.length;i++) {
+        var pair = vars[i].split("=");
+            // If first entry with this name
+        if (typeof query_string[pair[0]] === "undefined") {
+          query_string[pair[0]] = pair[1];
+            // If second entry with this name
+        } else if (typeof query_string[pair[0]] === "string") {
+          var arr = [ query_string[pair[0]], pair[1] ];
+          query_string[pair[0]] = arr;
+            // If third or later entry with this name
+        } else {
+          query_string[pair[0]].push(pair[1]);
+        }
+      }
+        return query_string;
+    } ();
+
+    //console.log(queryString.graph);
+    var graphToBeDrawn = queryString.graph || "random";
+    var randomDepth = (((queryString.depth>15)||(queryString.depth<1)) ? 4 : queryString.depth) || 4;
+
+    switch (graphToBeDrawn){
+        case "random":
+            DEPTH_LEVEL = randomDepth;
+            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            break;
+
+        case "life":
+            //load the CSV format and really specify path TODO
+            hgraph = importGraph("life");
+            DEPTH_LEVEL = hgraph.calculateNewDepth(0);
+            break;
+
+        case "languages":
+            //load the CSV format and really specify path TODO
+            hgraph = importGraph("languages");
+            DEPTH_LEVEL = hgraph.calculateNewDepth(0);
+            break;
+
+        default:
+            hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+            break;
+    }
+
+    //draw the desired graph
+    drawGraph();
+
+    // create a renderer and set the size
+    var renderer = new THREE.WebGLRenderer({alpha: true});
+    renderer.setClearColor(0xCCCCCC, 1.0);
+    //graphWidthArea = window.innerHeight+window.innerHeight/3;
+    graphWidthArea = window.innerWidth;
+    graphHeigthArea = window.innerHeight;
+    renderer.setSize(graphWidthArea, graphHeigthArea);
+    renderer.autoUpdateObjects = false;
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    //controls.noRotate = true;
+    //controls.noPan = true;
+
+    //append the renderer to the page
+    document.body.appendChild( renderer.domElement );
+
+    //we ask for a frame draw
+    requestAnimationFrame(render);
+
+    var frame = 0;
+
+    //rendering (what's done in every iteration)
+    function render() {
+        //for the rendering stats
+        stats.update();
+        rendererStats.update(renderer);
+        //for the tweening effects
+        TWEEN.update();
+        //for the controls (zoom)
+        controls.update();
+        //color needs update for mouseover effect
+        system.geometry.colorsNeedUpdate = true;
+        //geometry needs update in case of any transformation
+        system.geometry.verticesNeedUpdate = true;
+        //edges also need update
+        edges.geometry.verticesNeedUpdate = true;
+
+        requestAnimationFrame(render);
+        renderer.render(scene,camera);
+        /*for (var i = 0 ; i < labels.length ; i++){
+            if ((Math.pow(labels[i].position.x,2) + Math.pow(labels[i].position.y,2)) < 2950000 || labels[i].visibility){
+                labels[i].visible = true;
+            } else {
+                labels[i].visible = false;
+            }
+        }*/
+    }
+
+    //draw the initial Graph
+    function drawGraph(){
+    	//to modify this DEPTH_LEVEL for a method to find it out in the given graph
+    	var distance = 1 / DEPTH_LEVEL;
+    	var maxDeepen = DEPTH_LEVEL;
+
+        //create the geometry and material for the particle system
+        var geom = new THREE.Geometry();
+
+        initialTrans = new THREE.Vector2(0,0);
+        uniforms = {
+          trans: {
+            type: 'v2', // a vec2
+            value: initialTrans
+          },
+          compute: {
+            type: 'i', // an int
+            value: 0
+          }
+        };
+        var material = new THREE.ShaderMaterial({
+              vertexShader: document.getElementById( 'vertexShader' ).textContent,
+	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+              uniforms: uniforms,
+              vertexColors: true
+            });
+        //var material = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
+
+        //create first particle, centered in the middle
+        var particle = new THREE.Vector3(0,0,0);
+        hgraph.vertices[0].position = particle;
+        var particleColor =  new THREE.Color(Math.random()*0xffffff);
+        geom.vertices.push(particle);
+        geom.colors.push(particleColor);
+
+        //Set the label name and position
+        label = makeTextSprite( hgraph.vertices[0].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+        label.position.set(0,0,0);
+        //labels.push(label);
+
+        //calculate angle corresponding each child
+        var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
+        //number where to start
+        var iter = math.complex({r:1,phi:-angle/2});
+        //complex number to multiply to get desired
+        var trans = math.complex({r:1,phi:angle});
+        //draw all the linked nodes to the initial node
+        for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
+        	drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angle,particle);
+        	iter = math.multiply(iter,trans);
+        }
+
+        //subfunction for drawing recursively every child (linked node)
+        function drawChild(son,prof,iteration,angle,particleFather){
+        	posX = (distance*prof)*iteration.re;
+	       	posY = (distance*prof)*iteration.im;
+          prof++;
+  	   	  //id of the processing vertex
+		      var id = hgraph.vertices[son].id;
+          //create the particle in the desired position
+          var particle = new THREE.Vector3(posX, posY, 0);
+          //associate particle position to the graph
+          hgraph.vertices[id].position = particle;
+          geom.vertices[id] = particle;
+          geom.colors[id] = new THREE.Color(Math.random()*0xffffff);
+
+     		  edgeGeometry.vertices.push(particle);
+          edgeGeometry.vertices.push(particleFather);
+
+          //Set the label name and position
+          label = makeTextSprite( hgraph.vertices[id].name, { fontsize: 32, fontface: "Georgia", borderColor: {r:0, g:0, b:255, a:1.0} } );
+          label.position.set(posX,posY,0);
+          //labels[id]=label;
+
+       		//calculate angle corethrsponding each child
+	        var subangle = (angle)/(hgraph.vertices[son].linksTo.length);
+	        //number where to start
+	        var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+            start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
+	        //complex number to multiply to get desired
+	        var transform = math.complex({r:1,phi:subangle});
+   		    //draw all the linked nodes tproo this node
+   			  for (var i=0 ; i<hgraph.vertices[son].linksTo.length ; i++){
+			  		drawChild(hgraph.vertices[son].linksTo[i].id,prof,start,subangle,particle);
+			 		  start = math.multiply(start,transform);
+    		  }
+    	  }
+
+        /*for (var i = 0 ; i < labels.length ; i++){
+            scene.add(labels[i]);
+        }*/
+
+        visited.push(0);
+
+        edges = new THREE.Line(edgeGeometry, edgeMaterial, THREE.LinePieces);
+        edges.name = "edges";
+        //scene.add(edges);
+
+        system = new THREE.PointCloud(geom, material);
+        system.name = "nodes";
+        scene.add(system);
+    }
+
+    //function reCenterGraph
+    //@param newCenter id of the node to put in the center
+    function reCenterGraph(newCenter){
+        var newGraph = hgraph;
+        var newDepth = newGraph.calculateNewDepth(newCenter);
+
+        //to modify this DEPTH_LEVEL for a method to find it out in the given graph
+        var distance = 1 / newDepth;
+        var maxDeepen = newDepth;
+
+        newGraph.resetProcessed();
+
+        newGraph.vertices[newCenter].position.x=0;
+        newGraph.vertices[newCenter].position.y=0;
+        newGraph.vertices[newCenter].processed=true;
+
+        var links = newGraph.linksNotProcessed(newCenter);
+        //calculate angle corresponding each child
+        //var angle = (2*math.pi)/(links.length);
+        if (newGraph.vertices[newCenter].linksTo.length == 0){
+            var angle = (2*math.pi)/(3);
+            //number where to start
+            var iter = math.complex({r:1,phi:math.pi});
+        } else {
+            var angle = (2*math.pi)/(links.length);
+            //number where to start
+        var iter = math.complex({r:1,phi:-angle/2});
+        }
+
+        //complex number to multiply to get desired
+        var trans = math.complex({r:1,phi:angle});
+
+        //draw all the linked nodes to the initial node
+        for (var i=0 ; i<links.length ; i++){
+            updateChild(links[i].id,1,iter,angle,0,0);
+            iter = math.multiply(iter,trans);
+        }
+
+        /*for (var i = 0 ; i<labels.length ; i++){
+            labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
+        }*/
+        return newGraph;
+
+        //subfunction for updating recursively every child (linked node)
+        function updateChild(son,prof,iteration,angle,positionX,positionY){
+            posX = (distance*prof)*iteration.re;
+            posY = (distance*prof)*iteration.im;
+            prof++;
+            //id of the processing vertex
+            var id = hgraph.vertices[son].id;
+            //associate particle position to the graph
+            newGraph.vertices[id].position = new THREE.Vector3(posX, posY, 0);
+            newGraph.vertices[id].processed = true;
+
+            var position3D = new THREE.Vector3(positionX,positionY,0);
+            var positionSon = newGraph.vertices[id].position;
+
+            //calculate angle corresponding each child
+            var links = newGraph.linksNotProcessed(id);
+            var subangle = (angle)/(links.length);
+            //number where to start
+            var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+            start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
+            //complex number to multiply to get desired
+            var transform = math.complex({r:1,phi:subangle});
+            //draw all the linked nodes to this node
+
+            for (var i=0 ; i<links.length ; i++){
+                updateChild(links[i].id,prof,start,subangle,positionSon.x,positionSon.y);
+                start = math.multiply(start,transform);
+            }
+        }
+    }
+
+    var zProf = 0;
+
+    //function addNode
+    //
+    //@param
+    //@return
+    function addNode(){
+      hgraphs[0] = hgraph;
+      var hgraph2 = hgraph;
+
+      var id = hgraph2.vertices.length;
+      var vertex = new Vertex(id);
+      vertex.id = id;
+      vertex.name = document.getElementById('newName').value || "My name is: "+id;
+
+      hgraph2.addVertex(vertex,hgraph2.vertices[document.getElementById('newParent').value]);
+      console.log(hgraph2.vertices.length);
+      zProf += 0.3;
+      drawNewGraph(zProf,hgraph2);
+
+      //hgraphs[1] = hgraph2;
+
+    }
+
+
+    //function moveGraph
+    //@param p complex transformation
+    //@return newGraph updated graph
+    function moveGraph(p){
+
+        var newGraph = hgraph;
+
+        for (var i = 0 ; i<newGraph.vertices.length ; i++){
+            //z: complex number to transform
+            var z = math.complex(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y);
+
+            //apply transformation
+            var newPos = transformation(p,z);
+
+            //update position of the node in the newGraph
+            newGraph.vertices[i].position.x = newPos.re;
+            newGraph.vertices[i].position.y = newPos.im;
+
+            //update the position for the labels
+            //labels[i].position.set(newGraph.vertices[i].position.x,newGraph.vertices[i].position.y,0);
+        }
+
+        function transformation(p,z){
+            var num = math.add(z,p);
+            var den = math.add(1,math.multiply(math.conj(p),z));
+            var zt = math.divide(num,den);
+            return zt;
+        }
+        return newGraph;
+    }
+
+    //From Stemkoski example: Sprite-Text-Labes.html
+    // TODO delete not needed stuff and comment things
+    function makeTextSprite( message, parameters ){
+        if ( parameters === undefined ) parameters = {};
+
+        var fontface = parameters.hasOwnProperty("fontface") ?
+            parameters["fontface"] : "Arial";
+
+        var fontsize = parameters.hasOwnProperty("fontsize") ?
+            parameters["fontsize"] : 18;
+
+        var borderThickness = parameters.hasOwnProperty("borderThickness") ?
+            parameters["borderThickness"] : 4;
+
+        var borderColor = parameters.hasOwnProperty("borderColor") ?
+            parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+
+        var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+            parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+        //var spriteAlignment = THREE.SpriteAlignment.topLeft;
+
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        context.font = "Bold " + fontsize + "px " + fontface;
+
+        // get size data (height depends only on font size)
+        var metrics = context.measureText( message );
+        var textWidth = metrics.width;
+
+        // background color
+        context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+                                      + backgroundColor.b + "," + backgroundColor.a + ")";
+        // border color
+        context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+                                      + borderColor.b + "," + borderColor.a + ")";
+        context.lineWidth = borderThickness;
+        //roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+        // 1.4 is extra height factor for text below baseline: g,j,p,q.
+
+        // text color
+        context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+        context.fillText( message, borderThickness, fontsize + borderThickness);
+
+        // canvas contents will be used for a texture
+        var texture = new THREE.Texture(canvas)
+        texture.needsUpdate = true;
+
+        var spriteMaterial = new THREE.SpriteMaterial(
+            { map: texture, useScreenCoordinates: false} );
+        var sprite = new THREE.Sprite( spriteMaterial );
+        sprite.scale.set(0.5,0.25,0.005);
+        return sprite;
+    }
+
+    //information about number of nodes drawn. Align top-right
+    document.getElementById('numberOfNodes').innerHTML = "Number of nodes drawn: "+hgraph.vertices.length;
+    document.getElementById('numberOfNodes').style.position = 'absolute';
+    document.getElementById('numberOfNodes').style.right = '10px';
+    document.getElementById('numberOfNodes').style.top = '10px';
+
+    //information about interaction with nodes. Align bottom-right
+    document.getElementById('clicked').innerHTML = "No interaction until now";
+    document.getElementById('clicked').style.position = 'absolute';
+    document.getElementById('clicked').style.right = '10px';
+    document.getElementById('clicked').style.bottom = '10px';
+
+    //------------------------LISTENERS--------------------------
+    //add listener to allow clickable objects
+    document.addEventListener('mousedown', onDocumentMouseDown, false);
+    //add listener for resizing window
+    document.addEventListener('resize', onWindowResize, false );
+    //add listener for moving mouse
+    document.addEventListener('mousemove', onDocumentMouseMove, false );
+    //add listener for mouseclick released
+    //document.addEventListener('mouseup', onDocumentMouseUp, false );
+
+    //variables used by all events:
+    var raycaster = new THREE.Raycaster();
+    var vector = new THREE.Vector3();
+    raycaster.params.PointCloud.threshold = 0.0225;
+
+    //print the properties of a node  if is clicked and bring it to the center
+    function onDocumentMouseDown(event) {
+
+        event.preventDefault();
+        //check if some node clicked, for displaying information and centering
+        vector.set(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+        vector.unproject(camera);
+        raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+        intersects = raycaster.intersectObject(system);
+
+        if (intersects.length > 0) {
+            document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
+
+            var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
+            var clickedY = -( event.clientY / window.innerHeight ) * 2 + 1;
+
+            //update the history of visited nodes
+            visited.push(intersects[0].index);
+
+            /*// RECENTRES THE GRAPH APPLYING TRANSFORMATION
+            var p = math.complex(-clickedX,-clickedY);
+            var recalculatedGraph = moveGraph(p);
+            hgraph = recalculatedGraph;
+            // create a tween for rendering smoothly the transitions
+            var posSrc = {tmp: 150}
+            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+            //to choose between transitions
+            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+            var onUpdate = function () {
+                var count = 0;
+                var tmp = this.tmp;
+                system.geometry.vertices.forEach(function (e) {
+                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                    system.geometry.vertices[count++].set(newX, newY, e.z);
+                });
+            };
+            tween.onUpdate(onUpdate);
+            tween.start();*/
+
+            // RECENTRES THE GRAPH WITH NEW ALGORITHM
+            var recalculatedGraph = reCenterGraph(intersects[0].index);
+            // create a tween for rendering smoothly the transitions
+            var posSrc = {tmp: 150}
+            var tween = new TWEEN.Tween(posSrc).to({tmp: 1}, 1000);
+            //to choose between transitions
+            tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+            var onUpdate = function () {
+                var count = 0;
+                var tmp = this.tmp;
+                system.geometry.vertices.forEach(function (e) {
+                    var newX = ((e.x)+((recalculatedGraph.vertices[count].position.x-e.x)/tmp));
+                    var newY = ((e.y)+((recalculatedGraph.vertices[count].position.y-e.y)/tmp));
+                    system.geometry.vertices[count++].set(newX, newY, e.z);
+                });
+            };
+            tween.onUpdate(onUpdate);
+            tween.start();
+            hgraph = recalculatedGraph;
+
+        } else { //if not, apply the desired transformation
+            //This handles the drag and drop functionality
+
+            var initialPointX = null;
+            var initialPointY = null;
+            document.onmousemove = function(e) {
+                if (!initialPointX && !initialPointY){
+                    initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
+                    initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
+                }
+                var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
+                var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
+
+                if (e.shiftKey) {/*shift is down*/
+                  controls.noRotate = true;
+                  controls.noPan = true;
+
+                //----------------Algorithm in Vertex-Shader (GPU)-----------------
+
+                //here we pass the value of the transformation (p=RE+jIM) to the shaders
+                initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
+                uniforms.trans.value = initialTrans;
+                //uniforms.compute.value = 1;
+                }
+
+                //initialPointX = clickedX;
+                //initialPointY = clickedY;
+            }
+            this.onmouseup = function() {
+                //we release the mouse button
+                document.onmousemove = null;
+                //uniforms.compute.value = 0;
+                controls.noRotate = false;
+                controls.noPan = false;
+            }
+        }
+    }
+
+    var intersectedNode;
+    var originalColor = new THREE.Color();
+    var mouseOver = false;
+
+    //highlighting a node if mouse is over
+    function onDocumentMouseMove(event) {
+        event.preventDefault();
+        //check if some node clicked, for displaying information
+        vector.set(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
+        vector.unproject(camera);
+        raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+        var intersects = raycaster.intersectObject(system);
+        if (intersects.length > 0) {
+            if (!mouseOver){
+                var color = system.geometry.colors[intersects[0].index];
+                originalColor.setRGB(color.r,color.g,color.b);
+                intersectedNode = intersects[0].index;
+                //GPU picking example
+                //http://threejs.org/examples/webgl_interactive_cubes_gpu.html
+                system.geometry.colors[intersects[0].index].setRGB(1,1,1);
+                mouseOver = true;
+                document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
+                document.body.style.cursor = 'pointer';
+
+                //label.position.set(vector.x,vector.y,0);
+                //label.visibility = true;
+                //labels[intersects[0].index].visibility = true;
+            }
+        } else {
+            if (mouseOver){
+                system.geometry.colors[intersectedNode].setRGB(originalColor.r,originalColor.g,originalColor.b);
+                mouseOver = false;
+                document.body.style.cursor = 'default';
+                //labels[intersectedNode].visibility = false;
+            }
+        }
+    }
+
+    //proper working when resizing window (apparently not working)
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        controls.handleResize();
+    }
+</script>
+</body>
+</html>
