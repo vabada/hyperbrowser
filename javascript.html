@@ -148,7 +148,6 @@
         return query_string;
     } ();
 
-    //console.log(queryString.graph);
     var graphToBeDrawn = queryString.graph || "random";
     var randomDepth = (((queryString.depth>15)||(queryString.depth<1)) ? 4 : queryString.depth) || 4;
 
@@ -320,8 +319,9 @@
        		//calculate angle corethrsponding each child
 	        var subangle = (angle)/(hgraph.vertices[son].linksTo.length);
 	        //number where to start
-	        var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
-          start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
+	        var start = iteration;
+          //var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
+          start = math.multiply(start,math.complex({r:1,phi:-subangle/2}));
 	        //complex number to multiply to get desired
 	        var transform = math.complex({r:1,phi:subangle});
    		    //draw all the linked nodes tproo this node

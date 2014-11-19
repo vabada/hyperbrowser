@@ -37,8 +37,10 @@ function HGraph(){
  * @param parent vertex linking the son
  */
 HGraph.prototype.addVertex = function(son,parent){
-  this.vertices.push(son);
-  this.addEdge(son,parent);
+  if (son != undefined && parent != undefined) {
+    this.vertices.push(son);
+    this.addEdge(son,parent);
+  }
 }
 
 /* Function to add a Vertex (without links)

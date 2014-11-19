@@ -470,8 +470,8 @@
         //associate particle position to the graph
         hgraph2.vertices[id].position = particle;
         geom2.vertices[id] = particle;
-        //system.geometry.colors[id];
-        geom2.colors[id] = new THREE.Color(0xffffff);
+        var color = new THREE.Color(system.geometry.colors[id]);
+        geom2.colors[id] = color;
 
         edgeGeometry2.vertices.push(particle);
         edgeGeometry2.vertices.push(particleFather);
@@ -508,6 +508,12 @@
       system2 = new THREE.PointCloud(geom2, material2);
       system2.name = "nodes";
       scene.add(system2);
+
+      //less color intensity
+      for (var i = 0; i < system.geometry.colors.length ; i++){
+        system.geometry.colors[i].setHSL(1,1,0.9);
+        //console.log(system.geometry.colors[i]);
+      }
     }
 
     //function reCenterGraph
