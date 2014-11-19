@@ -260,19 +260,21 @@
         var angles = [];
         for (var i = 0 ; i < children.length ; i++){
           angles[i] = (2*math.pi) * (children[i] /grandchildren);
-          console.log(angles[i]);
+          //console.log(angles[i]);
         }
 
         //var angle = (2*math.pi)/(hgraph.vertices[0].linksTo.length)
         //number where to start
-        var iter = math.complex({r:1,phi:-angles[0]/2});
+        var iter = math.complex({r:1,phi:0});
         //complex number to multiply to get desired
         //draw all the linked nodes to the initial node
         for (var i=0 ; i<hgraph.vertices[0].linksTo.length ; i++){
           //if (i < hgraph.vertices[0].linksTo.length - 1 )
           var trans = math.complex({r:1,phi:angles[i]});
+          console.log(trans.toPolar().phi);
           drawChild(hgraph.vertices[0].linksTo[i].id,1,iter,angles[i],particle);
           iter = math.multiply(iter,trans);
+          console.log(iter.toPolar().phi);
         }
 
         /*//calculate angle corresponding each child (BEFORE)
@@ -319,7 +321,7 @@
 	        var subangle = (angle)/(hgraph.vertices[son].linksTo.length);
 	        //number where to start
 	        var start = math.multiply(iteration,math.complex({r:1,phi:-angle/2}));
-            start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
+          start = math.multiply(start,math.complex({r:1,phi:subangle/2}));
 	        //complex number to multiply to get desired
 	        var transform = math.complex({r:1,phi:subangle});
    		    //draw all the linked nodes tproo this node

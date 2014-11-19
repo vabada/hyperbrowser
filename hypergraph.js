@@ -1,8 +1,34 @@
-/*
- * HGraph graph with tree structure
+/*HGraph
+
+  Defines the graph structure
+  Originally implemented for tree structure
+  Now supporting any type of graph (uncomment edge related lines)
+
+  class HGraph
+  methods:
+    HGraph() //Constructor
+    addVertex(son,parent)
+    addUnlinkedVertex(vertex)
+    addEdge(son,parent)
+    resetProcessed()
+    numberOfNodes()
+    linksNotProcessed(id)
+    calculateNewDepth(newCenter)
+
+  class Vertex
+  methods:
+    Vertex(id) //Constructor
+
+  class Edge
+  methods:
+    Edge(node1,node2) //Constructor
+
+  createRandomGraph(maxChildren,minChildren,depthLevel)
+  importGraph(file)
  */
 function HGraph(){
   this.vertices = [];
+  //this.edges = [];
 }
 
 /* Function to add a Vertex to the HGraph
@@ -12,12 +38,29 @@ function HGraph(){
  */
 HGraph.prototype.addVertex = function(son,parent){
   this.vertices.push(son);
-  parent.linksTo.push(son);
-  son.linksFrom.push(parent);
+  this.addEdge(son,parent);
 }
 
-/*
- * Function that sets the property processed to false for every vertex
+/* Function to add a Vertex (without links)
+ *
+ * @param vertex node to add
+ */
+HGraph.prototype.addUnlinkedVertex = function(vertex){
+  this.vertices.push(vertex);
+}
+
+/* Function to add an Edge to the HGraph
+ *
+ * @param son destination node
+ * @param parent origin node
+ */
+HGraph.prototype.addEdge = function(son,parent){
+  parent.linksTo.push(son);
+  son.linksFrom.push(parent);
+  //this.edges.push(new Edge(son,parent));
+}
+
+/* Function that sets the property processed to false for every vertex
  */
 HGraph.prototype.resetProcessed = function(){
   for (var i = 0 ; i < this.vertices.length ; i++) {
@@ -25,8 +68,7 @@ HGraph.prototype.resetProcessed = function(){
   }
 }
 
-/*
- * Function to find out the number of nodes
+/* Function to find out the number of nodes
  *
  * @return this.vertices.length number of nodes
  */
@@ -93,6 +135,16 @@ function Vertex(id){
   this.linksTo = [];
   this.linksFrom = [];
   this.processed = false;
+}
+
+/* Constructor for Edges
+ *
+ * @param node1 node
+ * @param node2 node
+ */
+function Edge(node1, node2){
+  this.node1 = node1;
+  this.node2 = node2;
 }
 
 /* Function that creates a random Graph with
