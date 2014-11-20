@@ -1,2 +1,5 @@
+# Dependency directory
 node_modules
-history_stats.log
+
+# Logs
+*.log

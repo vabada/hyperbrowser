@@ -33,7 +33,7 @@ app.get('/shaders', function(req, res) {
 app.post('/statsHandler', function(req, res) {
     console.log("Receiving stats:");
     console.log(req.body);
-    fs.appendFile('history_stats.log', JSON.stringify(req.body)+"\n", function (err) {
+    fs.appendFile('stats.log', JSON.stringify(req.body)+"\n", function (err) {
       if (err) throw err;
       console.log('Saved to file OK');
     });
