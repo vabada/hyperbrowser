@@ -31,12 +31,8 @@ app.get('/shaders', function(req, res) {
 
 //stats handler (copying them to a file)
 app.post('/statsHandler', function(req, res) {
-    console.log("Receiving stats:");
-    console.log(req.body);
-    fs.appendFile('stats.log', JSON.stringify(req.body)+"\n", function (err) {
-      if (err) throw err;
-      console.log('Saved to file OK');
-    });
+    //Log it into heroku logs
+    console.log(JSON.stringify(req.body));
     res.status(200).end();
 });
 

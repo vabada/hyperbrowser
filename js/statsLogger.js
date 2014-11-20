@@ -61,8 +61,7 @@ function StatsLogger( sampling_period, post_interval, type ){
         fps: fps_samples,
         period: sampling_period+"ms",
         OS: navigator.platform,
-        browser: browserVersion,
-        date: new Date()
+        browser: browserVersion
 
       }));
     }
