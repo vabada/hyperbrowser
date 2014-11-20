@@ -31,7 +31,12 @@ app.get('/shaders', function(req, res) {
 
 //stats handler (copying them to a file)
 app.post('/statsHandler', function(req, res) {
-    //Log it into heroku logs
+
+    // open tail for live tracking
+    // $ heroku logs (--tail) (--source app) (--num 200) (up to 1500)
+    // copy to file
+    // $ heroku logs --source app --num 1000 > stats.log
+
     console.log(JSON.stringify(req.body));
     res.status(200).end();
 });
