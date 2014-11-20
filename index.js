@@ -1,6 +1,8 @@
 var express = require('express')
-var app = express();
 var bodyParser = require('body-parser');
+var fs = require('fs');
+
+var app = express();
 
 app.set('port', (process.env.PORT || 5000))
 app.use(express.static(__dirname));
@@ -31,7 +33,10 @@ app.get('/shaders', function(req, res) {
 app.post('/statsHandler', function(req, res) {
     console.log("Receiving stats:");
     console.log(req.body);
-    console.log("Saved to file OK");
+    fs.appendFile('history_stats.log', JSON.stringify(req.body)+"\n", function (err) {
+      if (err) throw err;
+      console.log('Saved to file OK');
+    });
     res.status(200).end();
 });
 

@@ -368,25 +368,33 @@
 
     //stats sent to server
     var fps_samples = [];
+    var interaction = false;
 
-    //save fps samples every 500 milliseconds
+    //save fps samples every 250 milliseconds
     setInterval(function(){
       fps_samples.push(stats.getFPS());
-    }, 500);
+    }, 100);
 
     //send the samples every 5 seconds
     setInterval(function(){
-      var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance
-      xmlhttp.open("POST", "/statsHandler");
-      xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-      xmlhttp.send(JSON.stringify({
-        numbernodes:hgraph.vertices.length,
-        fps: fps_samples,
-        OS: navigator.platform,
-        browser: browserVersion
-      }));
+      if (fps_samples.length > 7){
+        var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance
+        xmlhttp.open("POST", "/statsHandler");
+        xmlhttp.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xmlhttp.send(JSON.stringify({
+          version: "0.0.5",
+          type: "js",
+          numbernodes:hgraph.vertices.length,
+          interaction: interaction,
+          fps: fps_samples,
+          OS: navigator.platform,
+          browser: browserVersion,
+          date: new Date()
+        }));
+      }
       fps_samples = [];
-    }, 5000);
+      interaction = false;
+    }, 1000);
 
       /*for (var i = 0 ; i < labels.length ; i++){
           scene.add(labels[i]);
@@ -591,6 +599,10 @@
         intersects = raycaster.intersectObject(system);
 
         if (intersects.length > 0) {
+
+            //for the stats
+            interaction = true;
+
             document.getElementById('clicked').innerHTML = "Clicked node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
 
             var clickedX = (event.clientX / window.innerWidth ) * 2 - 1;
@@ -643,9 +655,14 @@
         } else { //if not, apply the desired transformation
             //This handles the drag and drop functionality
 
+            //for the stats
+            interaction = true;
+
             var initialPointX = null;
             var initialPointY = null;
             document.onmousemove = function(e) {
+                //for the stats
+                interaction = true;
                 if (!initialPointX && !initialPointY){
                     initialPointX =  (e.clientX / window.innerWidth ) * 2 - 1;
                     initialPointY = -( e.clientY / window.innerHeight ) * 2 + 1;
