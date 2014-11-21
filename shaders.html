@@ -17,11 +17,6 @@
     <!-- Vertex Shader-->
     <script id="vertexShader" type="x-shader/x-vertex">
 
-      // switch on high precision floats
-      #ifdef GL_ES
-		    precision highp float;
-		  #endif
-
       //Define complex operations
       #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
       #define conjugate(a) vec2(a.x,-a.y)
@@ -54,11 +49,6 @@
 
     <!-- Fragment Shader-->
     <script id="fragmentShader" type="x-shader/x-fragment">
-
-      // switch on high precision floats
-      #ifdef GL_ES
-        precision highp float;
-      #endif
 
       varying vec3 vColor;
       void main(){
@@ -389,8 +379,11 @@
         scene.add(system);
     }
 
-    //create a new stats logger, capture fps every 200ms and send every 3s
-    var statslog = new StatsLogger(200, 3000, "shader");
+    //Specific URL if we want logging "&logs=true"
+    if (queryString.logs == "true"){
+      //create a new stats logger, capture fps every 200ms and send every 3s
+      var statslog = new StatsLogger(200, 3000, "shader");
+    }
 
     //function reCenterGraph
     //@param newCenter id of the node to put in the center

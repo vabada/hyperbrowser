@@ -351,8 +351,11 @@
         scene.add(system);
     }
 
-    //create a new stats logger, capture fps every 200ms and send every 3s
-    var statslog = new StatsLogger(200, 3000, "js");
+    //Specific URL if we want logging "&logs=true"
+    if (queryString.logs == "true"){
+      //create a new stats logger, capture fps every 200ms and send every 3s
+      var statslog = new StatsLogger(200, 3000, "js");
+    }
 
       /*for (var i = 0 ; i < labels.length ; i++){
           scene.add(labels[i]);

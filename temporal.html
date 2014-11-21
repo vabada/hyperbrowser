@@ -16,11 +16,6 @@
     <!-- Vertex Shader-->
     <script id="vertexShader" type="x-shader/x-vertex">
 
-      // switch on high precision floats
-      #ifdef GL_ES
-		    precision highp float;
-		  #endif
-
       //Define complex operations
       #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
       #define conjugate(a) vec2(a.x,-a.y)
@@ -53,11 +48,6 @@
 
     <!-- Fragment Shader-->
     <script id="fragmentShader" type="x-shader/x-fragment">
-
-      // switch on high precision floats
-      #ifdef GL_ES
-        precision highp float;
-      #endif
 
       varying vec3 vColor;
       void main(){
