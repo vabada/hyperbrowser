@@ -305,7 +305,14 @@
   	   	  //id of the processing vertex
 		      var id = hgraph.vertices[son].id;
           //create the particle in the desired position
+
           var particle = new THREE.Vector3(posX, posY, 0);
+          // z coordinates depending on depth (for an 8 depth graph)
+          /*if (prof > 4){
+            var particle = new THREE.Vector3(posX, posY, prof*0.1 -0.4);
+          } else {
+            var particle = new THREE.Vector3(posX, posY, 0);
+          }*/
           //associate particle position to the graph
           hgraph.vertices[id].position = particle;
           geom.vertices[id] = particle;

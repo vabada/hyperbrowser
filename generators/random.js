@@ -258,3 +258,52 @@ function importGraph(file) {
   }
   return graph;
 }
+
+//------------------------GENERATOR-------------------------
+
+var fs = require('fs');
+
+console.log("generating the start of the JSON file:");
+
+fs.appendFile("randomGraphX.json", "'{\"phylo\":[", function (err) {
+  if (err) throw err;
+  console.log('Header saved to file');
+});
+
+//hgraph = createRandomGraph(MAX_CHILDREN_PER_NODE,MIN_CHILDREN_PER_NODE,DEPTH_LEVEL);
+var hgraph = createRandomGraph(4,2,5);
+
+for (var i = 0 ; i < hgraph.vertices.length ; i++){
+  if (hgraph.vertices[i].linksFrom.length == 0){
+    console.log("I am the root");
+    var parent = "";
+    parent += '{"name":"';
+    parent += hgraph.vertices[i].name;
+    parent += '","parent":null}'
+    fs.appendFile("randomGraphX.json", parent, function (err) {
+      if (err) throw err;
+      console.log('Saved to file');
+    });
+  } else {
+    //we are not the root :(
+    //añadir la coma al principio
+    var son = ",";
+    son += '{"name":"';
+    son += hgraph.vertices[i].name;
+    son += '","parent:"';
+    son += '}'; 
+    fs.appendFile("randomGraphX.json", son, function (err) {
+      if (err) throw err;
+      console.log('Saved to file');
+    });
+  }
+}
+
+fs.appendFile("randomGraphX.json", "]}';", function (err) {
+  if (err) throw err;
+  console.log('End saved to file');
+});
+
+
+//OUTPUT:
+//'{"phylo":[{"name":"life",  "parent":null},{  "name":"Embryophyta",  "parent":"Streptophyta"}]}';
