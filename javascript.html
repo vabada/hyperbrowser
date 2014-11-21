@@ -189,8 +189,8 @@
     renderer.setSize(graphWidthArea, graphHeigthArea);
     renderer.autoUpdateObjects = false;
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    //controls.noRotate = true;
-    //controls.noPan = true;
+    controls.noRotate = true;
+    controls.noPan = true;
 
     //append the renderer to the page
     document.body.appendChild( renderer.domElement );
@@ -640,9 +640,9 @@
 
                 //------------------Algorithm in JavaScript (CPU)-----------------
 
-                if (e.shiftKey) {/*shift is down*/
-                  controls.noRotate = true;
-                  controls.noPan = true;
+                //if (e.shiftKey) {/*shift is down*/
+                  //controls.noRotate = true;
+                  //controls.noPan = true;
                   //Calculate the transformations
                   var p = math.complex(clickedX-initialPointX,clickedY-initialPointY);
                   var recalculatedGraph = moveGraph(p);
@@ -655,13 +655,13 @@
 
                   initialPointX = clickedX;
                   initialPointY = clickedY;
-                }
+                //}
             }
             this.onmouseup = function() {
                 //we release the mouse button
                 document.onmousemove = null;
-                controls.noRotate = false;
-                controls.noPan = false;
+                //controls.noRotate = false;
+                //controls.noPan = false;
             }
         }
     }

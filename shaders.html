@@ -236,8 +236,8 @@
     renderer.setSize(graphWidthArea, graphHeigthArea);
     renderer.autoUpdateObjects = false;
     controls = new THREE.OrbitControls(camera, renderer.domElement);
-    //controls.noRotate = true;
-    //controls.noPan = true;
+    controls.noRotate = true;
+    controls.noPan = true;
 
     //append the renderer to the page
     document.body.appendChild( renderer.domElement );
@@ -682,9 +682,9 @@
                 var clickedX = (e.clientX / window.innerWidth ) * 2 - 1;
                 var clickedY = -( e.clientY / window.innerHeight ) * 2 + 1;
 
-                if (e.shiftKey) {/*shift is down*/
-                  controls.noRotate = true;
-                  controls.noPan = true;
+                //if (e.shiftKey) {/*shift is down*/
+                  //controls.noRotate = true;
+                  //controls.noPan = true;
 
                   //----------------Algorithm in Vertex-Shader (GPU)-----------------
 
@@ -692,7 +692,7 @@
                   initialTrans.set(clickedX-initialPointX,clickedY-initialPointY);
                   uniforms.trans.value = initialTrans;
                   uniforms.compute.value = 1;
-                }
+                //}
 
                 //initialPointX = clickedX;
                 //initialPointY = clickedY;
@@ -701,8 +701,8 @@
                 //we release the mouse button
                 document.onmousemove = null;
                 uniforms.compute.value = 0;
-                controls.noRotate = false;
-                controls.noPan = false;
+                //controls.noRotate = false;
+                //controls.noPan = false;
             }
         }
     }
