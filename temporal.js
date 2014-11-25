@@ -32,15 +32,31 @@ function TGraph(){
   this.vertices = [];
   this.edges = [];
   //define changes:
-  // {timeslot:t,added:node,newlinks:[Edge]}
-  // {timeslot:t,deleted:id}
-  // when deleted, delete all links from this node
+  // {timeslot:t,(newNodes:[Node]),(newEdges:[Edge]),(deletedNodes:[Node]),(deletedEdges:[Edge])}
   this.changes = [];
 }
 
 //TODO
-/*TGraph.prototype.newNode = function(node){
-  changes.push({added:node.id,********})
+TGraph.prototype.newNode = function(name){
+  var node = new Node(this.numberOfNodes + 1)
+  node.name = name;
+  this.addNode(node);
+  changes.push({timeslot:changes.length+1,newNodes:node.id})
+}
+
+//TODO
+/*TGraph.prototype.deleteNode = function(node){
+  changes.push({deleted:node.id,********})
+}*/
+
+//TODO
+/*TGraph.prototype.newEdge = function(edge){
+  changes.push({added:edge.id,********})
+}*/
+
+//TODO
+/*TGraph.prototype.deleteEdge = function(edge){
+  changes.push({deleted:edge.id,********})
 }*/
 
 //TODO
@@ -53,7 +69,7 @@ function TGraph(){
  * @param node node to add
  */
 TGraph.prototype.addNode = function(node){
-  if (node != undefined) {
+  if (node instanceof Node) {
     this.vertices.push(node);
   }
 }
@@ -63,7 +79,7 @@ TGraph.prototype.addNode = function(node){
  * @param parent Node linking the son
  */
 TGraph.prototype.addSon = function(son,parent){
-  if (son != undefined && parent != undefined) {
+  if (son instanceof Node && parent instanceof Node) {
     this.vertices.push(son);
     this.addEdge(son,parent);
   }
@@ -75,9 +91,11 @@ TGraph.prototype.addSon = function(son,parent){
  * @param parent origin node
  */
 TGraph.prototype.addEdge = function(son,parent){
-  parent.linksTo.push(son);
-  son.linksFrom.push(parent);
-  //this.edges.push(new Edge(son,parent));
+  if (son instanceof Node && parent instanceof Node) {
+    parent.linksTo.push(son);
+    son.linksFrom.push(parent);
+    this.edges.push(new Edge(son.id,parent.id));
+  }
 }
 
 /* Function that sets the property processed to false for every Node
@@ -96,13 +114,21 @@ TGraph.prototype.numberOfNodes = function(){
   return this.vertices.length;
 }
 
+/* Function to find out the number of edges
+ *
+ * @return this.vertices.edges number of edges
+ */
+TGraph.prototype.numberOfEdges = function(){
+  return this.edges.length;
+}
+
 /* Function to get the depth of a node
  *
  * @param id node for which we want to get the depth
  * @return this.vertices[id].depth depth
  */
 TGraph.prototype.getDepth = function(id){
-  //return this.vertices[id].depth; //TODO DEFINE
+  return this.vertices[id].depth;
 }
 
 /* Function to get the number of children of a node
@@ -111,7 +137,7 @@ TGraph.prototype.getDepth = function(id){
  * @return this.vertices[id].linksTo.length number of children
  */
 TGraph.prototype.getNumberOfChildren = function(id){
-  return this.vertices[id].linksTo.length; //TODO TEST IT
+  return this.vertices[id].linksTo.length;
 }
 
 /* Function that evaluates the not processed (drawn) links for Node
@@ -169,24 +195,25 @@ TGraph.prototype.calculateNewDepth = function(newCenter){ //@deprecated
  * @param id identifier of the node
  * @param type node's type
  */
-function Node(id,type){
+function Node(id, type){
   this.id = id;
   this.linksTo = [];
   this.linksFrom = [];
   this.processed = false;
+  this.depth = -1;
   this.type = type || "blue";
   //TODO define enum of Node Types (person, document, etc) (onthologies)
 }
 
 /* Constructor for Edges
  *
- * @param node1 node
- * @param node2 node
+ * @param id1 id of the origin
+ * @param id2 id of the destination
  * @param type edge's type
  */
-function Edge(node1, node2, type){
-  this.node1 = node1;
-  this.node2 = node2;
+function Edge(id1, id2, type){
+  this.id1 = id1;
+  this.id2 = id2;
   this.type = type || "strong";
   //TODO define enum of Edge Types (author, editor, collaborator) (onthologies)
 }
@@ -251,7 +278,7 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
  * @param file JSON file with the graph data
  * @return TGraph graph
  */
-/*function importGraph(file) {
+function importGraph(file) {
 
   //TODO load file, put into var loadedGraph
   //fs.read (NODE)
@@ -275,21 +302,19 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
   var node = new Node(0);
   node.name = obj.phylo[0].name;
   node.id = 0
-  //graph.vertices[0].id=0;
   graph.vertices.push(node);
 
   for (var i = 1; i<obj.phylo.length; i++){
     var node = new Node(i);
     node.name = obj.phylo[i].name;
     node.id = i;
-    //graph.vertices[i].id=i;
 
     for (var j = 0; j<graph.vertices.length; j++){
       if (graph.vertices[j].name == obj.phylo[i].parent){
         var parent = graph.vertices[j];
       }
     }
-    graph.addNode(node,parent);
+    graph.addSon(node,parent);
   }
   return graph;
-}*/
+}

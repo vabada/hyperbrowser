@@ -638,6 +638,7 @@
 
     //variables used by all events:
     var raycaster = new THREE.Raycaster();
+    var edgesRaycaster = new THREE.Raycaster();
     var vector = new THREE.Vector3();
     raycaster.params.PointCloud.threshold = 0.0225;
 
@@ -763,6 +764,15 @@
         //check if some node clicked, for displaying information
         vector.set(( event.clientX / window.innerWidth ) * 2 - 1, -( event.clientY / window.innerHeight ) * 2 + 1, 0.5);
         vector.unproject(camera);
+
+        //First try to select edges and print information. Impossible with THREE.LinePieces
+        /*edgesRaycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
+        intersectsEdges = edgesRaycaster.intersectObject(edges);
+        if (intersectsEdges.length > 0) {
+          console.log(intersectsEdges[0].object.geometry);
+          document.getElementById('clicked').innerHTML = "Intersected edge: "+intersectsEdges[0];// + ", which name is: "+hgraph.vertices[intersects[0].index].name;
+        }*/
+
         raycaster.ray.set(camera.position, vector.sub(camera.position).normalize());
         var intersects = raycaster.intersectObject(system);
         if (intersects.length > 0) {
@@ -775,6 +785,7 @@
                 system.geometry.colors[intersects[0].index].setRGB(1,1,1);
                 mouseOver = true;
                 document.getElementById('clicked').innerHTML = "Intersected node: "+intersects[0].index + ", which name is: "+hgraph.vertices[intersects[0].index].name;
+                //console.log(hgraph.vertices[intersects[0].index]);
                 document.body.style.cursor = 'pointer';
 
                 //label.position.set(vector.x,vector.y,0);
