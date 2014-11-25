@@ -11,55 +11,7 @@
     <script type="text/javascript" src="js/math.js"></script>
     <script type="text/javascript" src="js/tween.min.js"></script>
     <script type="text/javascript" src="js/OrbitControls.js"></script>
-    <script type="text/javascript" src="hypergraph.js"></script>
-
-    <!-- Vertex Shader-->
-    <script id="vertexShader" type="x-shader/x-vertex">
-
-      //Define complex operations
-      #define product(a, b) vec2(a.x*b.x-a.y*b.y, a.x*b.y+a.y*b.x)
-      #define conjugate(a) vec2(a.x,-a.y)
-      #define divide(a, b) vec2(((a.x*b.x+a.y*b.y)/(b.x*b.x+b.y*b.y)),((a.y*b.x-a.x*b.y)/(b.x*b.x+b.y*b.y)))
-
-      uniform vec2 trans;
-      uniform int compute;
-      varying vec3 vColor;
-
-      void main(){
-
-        //pass color to the vertex shader
-        vColor = color;
-
-        gl_PointSize = 10.0;
-
-        if  (compute == 1){
-          vec2 z = vec2(position.x,position.y);
-          vec2 newPosition = divide((z+trans),(vec2(1.0,0) + product((conjugate(trans)),z)));
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
-        } else {
-          vec3 newPosition = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-        }
-
-        //gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 0, 1.0);
-      }
-      //glEnable( GL_POINT_SMOOTH ); //For rounded nodes
-    </script>
-
-    <!-- Fragment Shader-->
-    <script id="fragmentShader" type="x-shader/x-fragment">
-
-      varying vec3 vColor;
-      void main(){
-
-        /*vec2 pos = mod(gl_FragCoord.xy, vec2(50.0)) - vec2(25.0);
-        float dist_squared = dot(pos, pos);
-
-        gl_FragColor = (dist_squared < 400.0)? vec4(.90, .90, .90, 1.0) : vec4(.20, .20, .40, 1.0);*/
-
-        gl_FragColor = vec4( vColor.rgb, 1.0 );
-      }
-    </script>
+    <script type="text/javascript" src="temporal.js"></script>
     <style>
         body{
             margin: 0;
@@ -300,23 +252,6 @@
         //create the geometry and material for the particle system
         var geom = new THREE.Geometry();
 
-        initialTrans = new THREE.Vector2(0,0);
-        uniforms = {
-          trans: {
-            type: 'v2', // a vec2
-            value: initialTrans
-          },
-          compute: {
-            type: 'i', // an int
-            value: 0
-          }
-        };
-        /*var material = new THREE.ShaderMaterial({
-              vertexShader: document.getElementById( 'vertexShader' ).textContent,
-	            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
-              uniforms: uniforms,
-              vertexColors: true
-            });*/
         var material = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
 
         //create first particle, centered in the middle
@@ -408,19 +343,6 @@
       //create the geometry and material for the particle system
       var geom2 = new THREE.Geometry();
 
-      initialTrans = new THREE.Vector2(0,0);
-      uniforms = {
-        trans: {
-          type: 'v2', // a vec2
-          value: initialTrans
-        },
-      };
-      /*var material = new THREE.ShaderMaterial({
-            vertexShader: document.getElementById( 'vertexShader' ).textContent,
-            fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
-            uniforms: uniforms,
-            vertexColors: true
-          });*/
       var material2 = new THREE.PointCloudMaterial({size:0.1,vertexColors:true});
 
       //create first particle, centered in the middle

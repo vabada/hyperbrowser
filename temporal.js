@@ -1,14 +1,13 @@
-/*HGraph
+/*TGraph
 
-  Defines the graph structure
+  Defines the graph structure with temporality
   Originally implemented for tree structure
-  Now supporting any type of graph (uncomment edge related lines)
 
-  class HGraph
+  class TGraph
   methods:
-    HGraph() //Constructor
-    addVertex(son,parent)
-    addUnlinkedVertex(vertex)
+    TGraph() //Constructor
+    addNode(node)
+    addSon(son,parent)
     addEdge(son,parent)
     resetProcessed()
     numberOfNodes()
@@ -17,9 +16,9 @@
     linksNotProcessed(id)
     calculateNewDepth(newCenter)
 
-  class Vertex
+  class Node
   methods:
-    Vertex(id) //Constructor
+    Node(id) //Constructor
 
   class Edge
   methods:
@@ -29,46 +28,61 @@
   importGraph(file)
  */
 
-function HGraph(){
+function TGraph(){
   this.vertices = [];
-  //this.edges = [];
+  this.edges = [];
+  //define changes:
+  // {timeslot:t,added:node,newlinks:[Edge]}
+  // {timeslot:t,deleted:id}
+  // when deleted, delete all links from this node
+  this.changes = [];
 }
 
-/* Function to add a Vertex to the HGraph
+//TODO
+/*TGraph.prototype.newNode = function(node){
+  changes.push({added:node.id,********})
+}*/
+
+//TODO
+/*TGraph.prototype.getGraphInTimeslot = function(timeslot){
+  return
+}*/
+
+/* Function to add a Node to the TGraph
  *
- * @param son vertex linked from the parent
- * @param parent vertex linking the son
+ * @param node node to add
  */
-HGraph.prototype.addVertex = function(son,parent){
+TGraph.prototype.addNode = function(node){
+  if (node != undefined) {
+    this.vertices.push(node);
+  }
+}
+/* Function to add a Child to a Node of the TGraph
+ *
+ * @param son Node linked from the parent
+ * @param parent Node linking the son
+ */
+TGraph.prototype.addSon = function(son,parent){
   if (son != undefined && parent != undefined) {
     this.vertices.push(son);
     this.addEdge(son,parent);
-    //son.depth =
   }
 }
 
-/* Function to add a Vertex (without links)
- *
- * @param vertex node to add
- */
-HGraph.prototype.addUnlinkedVertex = function(vertex){
-  this.vertices.push(vertex);
-}
-
-/* Function to add an Edge to the HGraph
+/* Function to add an Edge to the TGraph
  *
  * @param son destination node
  * @param parent origin node
  */
-HGraph.prototype.addEdge = function(son,parent){
+TGraph.prototype.addEdge = function(son,parent){
   parent.linksTo.push(son);
   son.linksFrom.push(parent);
   //this.edges.push(new Edge(son,parent));
 }
 
-/* Function that sets the property processed to false for every vertex
+/* Function that sets the property processed to false for every Node
  */
-HGraph.prototype.resetProcessed = function(){
+TGraph.prototype.resetProcessed = function(){
   for (var i = 0 ; i < this.vertices.length ; i++) {
     this.vertices[i].processed=false;
   }
@@ -78,7 +92,7 @@ HGraph.prototype.resetProcessed = function(){
  *
  * @return this.vertices.length number of nodes
  */
-HGraph.prototype.numberOfNodes = function(){
+TGraph.prototype.numberOfNodes = function(){
   return this.vertices.length;
 }
 
@@ -87,7 +101,7 @@ HGraph.prototype.numberOfNodes = function(){
  * @param id node for which we want to get the depth
  * @return this.vertices[id].depth depth
  */
-HGraph.prototype.getDepth = function(id){
+TGraph.prototype.getDepth = function(id){
   //return this.vertices[id].depth; //TODO DEFINE
 }
 
@@ -96,16 +110,16 @@ HGraph.prototype.getDepth = function(id){
  * @param id node for which we want to get the depth
  * @return this.vertices[id].linksTo.length number of children
  */
-HGraph.prototype.getNumberOfChildren = function(id){
+TGraph.prototype.getNumberOfChildren = function(id){
   return this.vertices[id].linksTo.length; //TODO TEST IT
 }
 
-/* Function that evaluates the not processed (drawn) links for vertex
+/* Function that evaluates the not processed (drawn) links for Node
  *
  * @param id node for which we want to get the links
  * @return links array with the not processed links
  */
-HGraph.prototype.linksNotProcessed = function(id){
+TGraph.prototype.linksNotProcessed = function(id){ //@deprecated
   var links = [];
   for (var i = 0 ; i < this.vertices[id].linksTo.length ; i++) {
       if (! this.vertices[id].linksTo[i].processed){
@@ -125,7 +139,7 @@ HGraph.prototype.linksNotProcessed = function(id){
  * @param newCenter central node
  * @return maximumDepth level of depth
  */
-HGraph.prototype.calculateNewDepth = function(newCenter){
+TGraph.prototype.calculateNewDepth = function(newCenter){ //@deprecated
   var maximumDepth = 0;
   var that = this;
 
@@ -153,22 +167,28 @@ HGraph.prototype.calculateNewDepth = function(newCenter){
 /* Constructor for Vertices, uniquely identifiable by id
  *
  * @param id identifier of the node
+ * @param type node's type
  */
-function Vertex(id){
+function Node(id,type){
   this.id = id;
   this.linksTo = [];
   this.linksFrom = [];
   this.processed = false;
+  this.type = type || "blue";
+  //TODO define enum of Node Types (person, document, etc) (onthologies)
 }
 
 /* Constructor for Edges
  *
  * @param node1 node
  * @param node2 node
+ * @param type edge's type
  */
-function Edge(node1, node2){
+function Edge(node1, node2, type){
   this.node1 = node1;
   this.node2 = node2;
+  this.type = type || "strong";
+  //TODO define enum of Edge Types (author, editor, collaborator) (onthologies)
 }
 
 /* Function that creates a random Graph with
@@ -176,46 +196,49 @@ function Edge(node1, node2){
  * @param maxChildren number of maximum children per node
  * @param minChildren number of minumum children per node
  * @param depthLevel maximum number of levels from the center
- * @return HGraph graph desired graph
+ * @return TGraph graph desired graph
  */
 function createRandomGraph(maxChildren,minChildren,depthLevel) {
+
   //default parameters
   var maxChildren = maxChildren || 4;
   var minChildren = minChildren || 2;
   var depthLevel = depthLevel || 4;
 
-  //create the HGraph
-  var graph = new HGraph();
+  //create the TGraph
+  var graph = new TGraph();
 
-  //create first vertex and add it to the HGraph
+  //create first Node and add it to the TGraph
   var id = 0;
-  var vertex = new Vertex(id);
-  vertex.id = id;
-  vertex.name = "My name is: "+id;
-  graph.vertices.push(vertex);
+  var node = new Node(id);
+  node.depth = 0;
+  node.id = id;
+  node.name = "My name is: "+id;
+  graph.vertices.push(node);
   id++;
 
   //add random number of children to the node
   var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
   for (var i=0 ; i<numChildren ; i++){
-    addChild(vertex,depthLevel-1);
+    addChild(node,depthLevel-1);
   }
 
   /* Function that adds a child to a parent
    *
-   * @param parent Vertex that has this child
+   * @param parent Node that has this child
    * @param depth level of depth where we are
    */
   function addChild(parent,depth){
     if (depth>=0){
-      var vertex = new Vertex(id);
-      vertex.name = "My name is: "+id;
-      vertex.id = id;
-      graph.addVertex(vertex,parent);
+      var node = new Node(id);
+      node.name = "My name is: "+id;
+      //node.depth = X;
+      node.id = id;
+      graph.addSon(node,parent);
       id++;
       var numChildren = Math.floor(Math.random() * (maxChildren-minChildren+1) + minChildren);
       for (var i=0 ; i<numChildren ; i++){
-        addChild(vertex,depth-1);
+        addChild(node,depth-1);
       }
     }
   }
@@ -226,9 +249,9 @@ function createRandomGraph(maxChildren,minChildren,depthLevel) {
 /* Function that creates a graph from a JSON file
  *
  * @param file JSON file with the graph data
- * @return HGraph graph
+ * @return TGraph graph
  */
-function importGraph(file) {
+/*function importGraph(file) {
 
   //TODO load file, put into var loadedGraph
   //fs.read (NODE)
@@ -246,19 +269,19 @@ function importGraph(file) {
 
   obj = JSON.parse(loadedGraph);
 
-  //create the HGraph
-  var graph = new HGraph();
+  //create the TGraph
+  var graph = new TGraph();
 
-  var vertex = new Vertex(0);
-  vertex.name = obj.phylo[0].name;
-  vertex.id = 0
+  var node = new Node(0);
+  node.name = obj.phylo[0].name;
+  node.id = 0
   //graph.vertices[0].id=0;
-  graph.vertices.push(vertex);
+  graph.vertices.push(node);
 
   for (var i = 1; i<obj.phylo.length; i++){
-    var vertex = new Vertex(i);
-    vertex.name = obj.phylo[i].name;
-    vertex.id = i;
+    var node = new Node(i);
+    node.name = obj.phylo[i].name;
+    node.id = i;
     //graph.vertices[i].id=i;
 
     for (var j = 0; j<graph.vertices.length; j++){
@@ -266,7 +289,7 @@ function importGraph(file) {
         var parent = graph.vertices[j];
       }
     }
-    graph.addVertex(vertex,parent);
+    graph.addNode(node,parent);
   }
   return graph;
-}
+}*/

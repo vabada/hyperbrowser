@@ -3,3 +3,6 @@ node_modules
 
 #logs
 *.log
+
+# random generated graphs
+generators/*.json
