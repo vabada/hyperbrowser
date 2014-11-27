@@ -35,6 +35,11 @@
             top:190px;
             right:10px;
         }
+        #buttonDelete{
+            position:absolute;
+            top:160px;
+            right:10px;
+        }
         #add{
             position:absolute;
             right:10px;
@@ -55,11 +60,12 @@
         <input type="radio" name="graph" value="languages">Languages of the world<br>
         <input id="buttonSwap" type="submit" value="Swap">
     </form>
-    <div id="add">
+    <!-- <div id="add">
         Adding a new Node:<br>
         <div>Parent: <input type="number" id="newParent" name="parent" value="2"></div><br>
         <div>Name: <input type="text" id="newName" name="name" value="illo, me llamo illo"></div>
-    </div>
+    </div> -->
+    <button onclick="deleteNode()" id="buttonDelete">Delete node</button>
     <button onclick="addNode()" id="buttonAdd">Add node</button>
     <div id="numberOfNodes">
     </div>
@@ -504,12 +510,28 @@
 
     var zProf = 0;
 
+    /*function deleteNode
+
+    *@param nodeID id of the node to delete
+    *@return
+    */
+    function deleteNode(nodeID){
+      hgraph.deleteNode(hgraph.vertices.length-1);
+    }
+
     //function addNode
     //
     //@param
     //@return
-    function addNode(){
-      hgraphs[0] = hgraph;
+    function addNode(name){
+
+      var newName = name || "new node, jejeje" ;
+
+      hgraph.newNode(newName);
+
+      //console.log(hgraph.changes);
+
+      /*hgraphs[0] = hgraph;
       var hgraph2 = hgraph;
 
       var id = hgraph2.vertices.length;
@@ -520,7 +542,7 @@
       hgraph2.addVertex(vertex,hgraph2.vertices[document.getElementById('newParent').value]);
       console.log(hgraph2.vertices.length);
       zProf += 0.9;
-      drawNewGraph(zProf,hgraph2);
+      drawNewGraph(zProf,hgraph2);*/
 
       //hgraphs[1] = hgraph2;
 

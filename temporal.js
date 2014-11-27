@@ -10,7 +10,6 @@
     addSon(son,parent)
     addEdge(son,parent)
     resetProcessed()
-    numberOfNodes()
     getDepth(id)
     getNumberOfChildren(id)
     linksNotProcessed(id)
@@ -34,20 +33,33 @@ function TGraph(){
   //define changes:
   // {timeslot:t,(newNodes:[Node]),(newEdges:[Edge]),(deletedNodes:[Node]),(deletedEdges:[Edge])}
   this.changes = [];
+  this.changes.push("{'timeslot':0}");
+  console.log(this.changes);
 }
 
-//TODO
-TGraph.prototype.newNode = function(name){
-  var node = new Node(this.numberOfNodes + 1)
+/* Function to create a new node in a new timeslot
+ *
+ * @param name name of the new node
+ * @param timeslot //TODO
+ */
+TGraph.prototype.newNode = function(name,timeslot){
+  var newId = this.vertices.length;
+  var node = new Node(newId)
   node.name = name;
   this.addNode(node);
-  changes.push({timeslot:changes.length+1,newNodes:node.id})
+  this.changes.push("{'timeslot':"+this.changes.length+",'newNodes':"+node.id+"}");
+  console.log(this.changes);
 }
 
-//TODO
-/*TGraph.prototype.deleteNode = function(node){
-  changes.push({deleted:node.id,********})
-}*/
+/* Function to delete a node in a new timeslot
+ *
+ * @param id of the deleted node
+ * @param timeslot //TODO
+ */
+TGraph.prototype.deleteNode = function(nodeID,timeslot){
+  this.changes.push("{'timeslot':"+this.changes.length+",'deletedNodes':"+nodeID+"}");
+  console.log(this.changes);
+}
 
 //TODO
 /*TGraph.prototype.newEdge = function(edge){
@@ -57,6 +69,8 @@ TGraph.prototype.newNode = function(name){
 //TODO
 /*TGraph.prototype.deleteEdge = function(edge){
   changes.push({deleted:edge.id,********})
+  uff (igual no)
+  delete this.vertices[id]
 }*/
 
 //TODO
@@ -104,22 +118,6 @@ TGraph.prototype.resetProcessed = function(){
   for (var i = 0 ; i < this.vertices.length ; i++) {
     this.vertices[i].processed=false;
   }
-}
-
-/* Function to find out the number of nodes
- *
- * @return this.vertices.length number of nodes
- */
-TGraph.prototype.numberOfNodes = function(){
-  return this.vertices.length;
-}
-
-/* Function to find out the number of edges
- *
- * @return this.vertices.edges number of edges
- */
-TGraph.prototype.numberOfEdges = function(){
-  return this.edges.length;
 }
 
 /* Function to get the depth of a node
